@@ -1,0 +1,10 @@
+.idea/
+.conda/
+ARM029a/
+A1_single_sites/
+nems/
+NEMS_/
+__pycache__/
+
+*.zip
+*.tgz
