@@ -53,20 +53,21 @@ def print_data(data: RasterizedSignal, name="Data"):
 
 # Time to Stimuli
 # Takes an interval, in seconds, and returns the stimulus in that interval
-def time_to_stimuli(signal: SignalBase, interval: (float, float)) -> [str]:
+def time_to_stimuli(signal: SignalBase, interval: (float, float)) -> ([str], (float, float)):
     if interval[0] < 0:
         raise ValueError('Start Index out of range')
 
     index: (int, int) = math.floor(interval[0] / 1.5), math.floor(interval[1] / 1.5)
     val_epochs = epoch.epoch_names_matching(signal.epochs, '^STIM_00')
 
-    if index[1] > len(val_epochs) - 1:
+    if index[1] == len(val_epochs):
+        return val_epochs[index[0]:], index
+    elif index[1] > len(val_epochs) - 1:
         raise ValueError('End Index out of range')
+    elif index[1] != 0 and interval[1] % 1.5 == 0.0:
+        return val_epochs[index[0]:index[1]], index
 
-    if index[1] != 0 and interval[1] % 1.5 == 0.0:
-        return val_epochs[index[0]:index[1]]
-
-    return val_epochs[index[0]:index[1] + 1]
+    return val_epochs[index[0]:index[1] + 1], index
 
 
 def print_channels(signal: SignalBase) -> None:
@@ -75,31 +76,32 @@ def print_channels(signal: SignalBase) -> None:
 
 # Spike Count Plot
 # Plots the spike count located in the response data.
-# TODO: How to address stimuli with different trial data?
 # TODO: Add space or only display (start, first_multiple) and (last_multiple, end)?
+# TODO: Make the plot size dynamic
 def resp_spike_count_plot(signal: RasterizedSignal, sec_interval: (float, float), cells: [str],
                           hist: bool = False) -> None:
     data = signal.extract_channels(cells)
-    stimuli = time_to_stimuli(signal, sec_interval)
+    stimuli, index = time_to_stimuli(signal, sec_interval)
     n_cells = len(cells)
     n_stimuli = len(stimuli)
     f, ax = plt.subplots(n_stimuli, n_cells)
 
     for i in range(n_cells):
         for j in range(n_stimuli):
-            t0 = j * 150
+            t0 = (index[0] * 150) + j * 150
             t1 = t0 + 150
             x = np.arange(t0, t1, 1) / 100
             x = x.tolist()
             if j == 0:
-                a = [0 for i in range(0, int(sec_interval[0] * 100))]
-                frame_data = a + data.extract_epoch(stimuli[j])[0, 0, int(sec_interval[0] * 100):].tolist()
+                frame_data = data.extract_epoch(stimuli[j])[0, 0, int(sec_interval[0] * 10 / 15):].tolist()
+                a = [0 for i in range(150 - len(frame_data))]
+                frame_data = a + frame_data
             elif j == n_stimuli - 1:
-                a = [0 for i in range(int(sec_interval[1] * 100), t1)]
-                frame_data = data.extract_epoch(stimuli[j])[0, 0, :int((sec_interval[1] * 100) - t0)]
-                frame_data = frame_data.tolist() + a
+                frame_data = data.extract_epoch(stimuli[j])[0, 0, :int(sec_interval[1] * 100 - t0)].tolist()
+                frame_data += [0 for i in range(150 - len(frame_data))]
             else:
                 frame_data = data.extract_epoch(stimuli[j])[0, 0, :]
+
             if hist:
                 ax[j, i].bar(x, frame_data, edgecolor='black', width=0.01)
             else:
@@ -133,15 +135,31 @@ def stim_heatmap(signal: SignalBase, interval: (float, float)) -> [str]:
     pass
 
 
+def exploring(signal: RasterizedSignal) -> None:
+    val_epochs = epoch.epoch_names_matching(signal.epochs, '^STIM_00')
+    print(all_cellids)
+
+    for j in range(len(all_cellids)):
+        for i in range(len(val_epochs)):
+            data = signal.extract_channels([all_cellids[j]]).rasterize()
+            r = data.extract_epoch(val_epochs[i])
+            if r.shape[0] > 1 or r.shape[1] > 1:
+                print(r)
+                print(r.shape)
+                print(i)
+
+
 if __name__ == '__main__':
     tgz_file: str = 'A1_NAT4_ozgf.fs100.ch18.tgz'
     rec = load_datafile(tgz_file)
     stim, resp = splitting_recording(rec)
     all_cellids = resp.chans
+    print(len(all_cellids))
     # print_data(stim, "Stimuli")
     # print_data(resp, "Response")
-    resp_spike_count_plot(resp, (0.0, 3.2), all_cellids[0:2], hist=True)
+    resp_spike_count_plot(resp, (15, 19.5), [all_cellids[i] for i in [300, 600, 830]], hist=False)
     # resp_raster_plot(resp)
     # time_to_stimuli = time_to_stimuli(resp, (0, 3.0))
     # print(time_to_stimuli)
-    print_step('END OF PROGRAM', True)
+    # print_step('END OF PROGRAM', True)
+    # exploring(resp)
