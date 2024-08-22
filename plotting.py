@@ -1,4 +1,4 @@
-# File: visual_analysis.py
+# File: plotting.py
 # Purpose: Visual analysis of the recordings.
 
 from typing import List, Tuple
@@ -10,8 +10,15 @@ import seaborn as sns
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
 
+from computing import population_spike_rate, population_evoked_firing_rate
 # Tools
-from tools import load_datafile, splitting_recording, time_to_stimuli, save_state, load_state
+from tools import (
+    load_datafile,
+    splitting_recording,
+    time_to_stimuli,
+    save_state,
+    load_state,
+)
 
 # from main import file_list
 
@@ -19,12 +26,18 @@ global all_cellids
 
 
 # TODO: How to deal with different trials in the plots?
+#       Renaming parameters
+
 
 # Response: Multiple Spike Count Plot
 # Plots the spike count located in the response data.
 # TODO: Make the plot size dynamic
-def resp_spike_rate_plot(signal: RasterizedSignal, sec_interval: (float, float), cells: [str],
-                         hist: bool = False) -> None:
+def resp_spike_rate_plot(
+        signal: RasterizedSignal,
+        sec_interval: (float, float),
+        cells: [str],
+        hist: bool = False,
+) -> None:
     stimuli, index = time_to_stimuli(signal, sec_interval)
     n_cells = len(cells)
     n_stimuli = len(stimuli)
@@ -38,29 +51,35 @@ def resp_spike_rate_plot(signal: RasterizedSignal, sec_interval: (float, float),
             x = np.arange(t0, t1, 1) / 100
             x = x.tolist()
             if j == 0:
-                frame_data = data.extract_epoch(stimuli[j])[0, 0, int(sec_interval[0] * 10 / 15):].tolist()
+                frame_data = data.extract_epoch(stimuli[j])[
+                             0, 0, int(sec_interval[0] * 10 / 15):
+                             ].tolist()
                 a = [0 for i in range(150 - len(frame_data))]
                 frame_data = a + frame_data
             elif j == n_stimuli - 1:
-                frame_data = data.extract_epoch(stimuli[j])[0, 0, :int(sec_interval[1] * 100 - t0)].tolist()
+                frame_data = data.extract_epoch(stimuli[j])[
+                             0, 0, : int(sec_interval[1] * 100 - t0)
+                             ].tolist()
                 frame_data += [0 for i in range(150 - len(frame_data))]
             else:
                 frame_data = data.extract_epoch(stimuli[j])[0, 0, :]
 
             if hist:
-                ax[j, i].bar(x, frame_data, edgecolor='black', width=0.01)
+                ax[j, i].bar(x, frame_data, edgecolor="black", width=0.01)
             else:
                 ax[j, i].plot(x, frame_data)
-            ax[j, i].set_title(f'Channel: {cells[i]}\nStim: {stimuli[j][7:-4]}')
-            ax[j, i].set_ylabel('Spikes/ms')
+            ax[j, i].set_title(f"Channel: {cells[i]}\nStim: {stimuli[j][7:-4]}")
+            ax[j, i].set_ylabel("Spikes/ms")
 
-    f.suptitle('Spike Rate Plot', weight='bold')
+    f.suptitle("Spike Rate Plot", weight="bold")
     plt.tight_layout()
     plt.show()
 
 
 # TODO: Use start and end in seconds when extracting epochs
-def resp_raster_plot(signal: RasterizedSignal, interval: (float, float), cells: str | List[str]) -> None:
+def resp_raster_plot(
+        signal: RasterizedSignal, interval: (float, float), cells: str | List[str]
+) -> None:
     stimuli, index = time_to_stimuli(signal, interval)
     raster_signal = signal.rasterize()
     n_cells = len(cells)
@@ -76,7 +95,7 @@ def resp_raster_plot(signal: RasterizedSignal, interval: (float, float), cells: 
         r = single_cell_resp.extract_epoch(stimuli[j])
 
         if j == n_stimuli - 1 and interval[1] % 1.5 != 0:
-            r = r[:, :, :int(interval[1] * 100 + 1 - j * 150)]
+            r = r[:, :, : int(interval[1] * 100 + 1 - j * 150)]
 
         y, _, x = np.where(r)
         x_sec = (x + (150 * j)) / 100
@@ -86,21 +105,20 @@ def resp_raster_plot(signal: RasterizedSignal, interval: (float, float), cells: 
             for xt in x:
                 if xt >= interval[0] * 100:
                     x_sec.append((xt / 100))
-            y = y[:len(x_sec)]
+            y = y[: len(x_sec)]
 
-        plt.scatter(x_sec, y, s=1, color='black')
+        plt.scatter(x_sec, y, s=1, color="black")
 
-    plt.xticks(np.arange(interval[0], interval[1] + .5, .5))
+    plt.xticks(np.arange(interval[0], interval[1] + 0.5, 0.5))
     plt.suptitle("Raster Plot")
     plt.title(f"Cell: {", ".join(cells)}")
-    plt.xlabel('Time (s)')
-    plt.ylabel('Trial')
+    plt.xlabel("Time (s)")
+    plt.ylabel("Trial")
     plt.tight_layout()
     plt.show()
 
 
 # Stimuli Heatmap
-# TODO: How to plot different trials?
 def stim_heatmap(signal: RasterizedSignal, interval: Tuple[float, float]) -> None:
     r = signal.extract_epoch(np.array([[interval[0], interval[1]]]))
     y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
@@ -108,21 +126,23 @@ def stim_heatmap(signal: RasterizedSignal, interval: Tuple[float, float]) -> Non
     r = r[0, :, :]
 
     plt.figure()
-    ax = sns.heatmap(r, cmap='viridis', fmt='d')
+    ax = sns.heatmap(r, cmap="viridis", fmt="d")
     ax.invert_yaxis()
-    plt.suptitle('Stimuli Heatmap')
-    plt.title(f'Stimulation Heatmap')
-    plt.ylabel('Sample (Hz)')
-    plt.xlabel('Time from stimulus onset (s)')
+    plt.suptitle("Stimuli Heatmap")
+    plt.title(f"Stimulation Heatmap")
+    plt.ylabel("Sample (Hz)")
+    plt.xlabel("Time from stimulus onset (s)")
     ax.set_xticks(np.arange(interval[0] * 100, interval[1] * 100 + 1, 50))
-    ax.set_xticklabels(np.arange(interval[0], interval[1] + .5, .5), rotation=0)
+    ax.set_xticklabels(np.arange(interval[0], interval[1] + 0.5, 0.5), rotation=0)
     plt.yticks(np.arange(1, 19, 1), labels=y, rotation=0)
     plt.tight_layout()
     plt.show()
 
 
-def population_spike_rate(signal: RasterizedSignal, interval: Tuple[float, float]) -> None:
-    data = signal.extract_epoch(np.array([[interval[0], interval[1]]]))
+def population_spike_rate_plot(
+        resp_signal: RasterizedSignal, interval: Tuple[float, float]
+) -> None:
+    data = resp_signal.extract_epoch(np.array([[interval[0], interval[1]]]))
     y = data[0, :, :]
     # Adding all the data mong the 849 units
     y = np.sum(y, axis=0)
@@ -132,11 +152,34 @@ def population_spike_rate(signal: RasterizedSignal, interval: Tuple[float, float
 
     plt.figure()
     plt.plot(x, y)
-    plt.xticks(np.arange(interval[0] * 100, interval[1] * 100 + 1, 50),
-               labels=np.arange(interval[0], interval[1] + .5, .5))
-    plt.title(f'Population Spike Rate')
-    plt.ylabel('Rate (ms)')
-    plt.xlabel('Time (s)')
+    plt.xticks(
+        np.arange(interval[0] * 100, interval[1] * 100 + 1, 50),
+        labels=np.arange(interval[0], interval[1] + 0.5, 0.5),
+    )
+    plt.title(f"Population Spike Rate")
+    plt.ylabel("Rate (ms)")
+    plt.xlabel("Time (s)")
+    plt.tight_layout()
+    plt.show()
+
+
+def spike_rate_and_stimulus(
+        stim_signal: RasterizedSignal,
+        resp_signal: RasterizedSignal,
+        interval: Tuple[float, float],
+) -> None:
+    y_stim = population_evoked_firing_rate(stim_signal, interval)
+    y_resp = population_spike_rate(resp_signal, interval)
+    y = [(a * 0.07365191 + 0.00161091) for a in y_stim]
+    x = np.arange(interval[0] * 100, interval[1] * 100, 1)
+
+    f, ax = plt.subplots(3, 1, sharex=True)
+    plt.figure()
+    ax[0].plot(y_stim)
+    # ax[0].set_title(f"Stimulus Spike Rate")
+    ax[1].plot(y_resp)
+    # ax[1].set_title(f"Population Spike Rate")
+    ax[2].plot(x, y)
     plt.tight_layout()
     plt.show()
 
@@ -146,8 +189,8 @@ def exploring(signal: RasterizedSignal) -> None:
     print(signal.as_continuous().shape)
 
 
-if __name__ == '__main__':
-    tgz_file: str = 'A1_NAT4_ozgf.fs100.ch18.tgz'
+if __name__ == "__main__":
+    tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
 
     state_file = "state.pkl"
     state = load_state(state_file)
@@ -162,5 +205,5 @@ if __name__ == '__main__':
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1, 4.0), all_cellids[0])
     # stim_heatmap(stim, (0, 3.0))
-    # population_spike_rate(resp, (0, 8.0))
-    # exploring(stim)
+    # population_spike_rate_plot(resp, (0, 8.0))
+    spike_rate_and_stimulus(stim, resp, (0, 5))
