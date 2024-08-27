@@ -2,7 +2,7 @@
 # Purpose: Calculations of the recordings
 
 # Packages
-from functools import reduce
+import math
 from typing import List, Tuple
 
 import numpy as np
@@ -14,49 +14,42 @@ from tools import load_state, save_state, load_datafile, splitting_recording
 
 
 # QUESTION: Return list of floats or a numpy array
+# TODO: Write unit tests
 
 
 def unit_mean_baseline_activity(unit) -> float:
-    # NOTE: Faster than combining the first 20 sec and last 20 sec and adding them at the end
-    intervals = [unit[i: i + 150] for i in range(0, len(unit), 150)]
+    result = 0
+    n = 0
 
-    # 0.01628902941296821
-    unit_mean: float = reduce(
-        lambda x, y: x + sum(y[:21]) + sum(y[130:]), intervals, 0
-    ) / len(intervals)
+    for i in range(0, len(unit), 150):
+        for j in range(20):
+            result += unit[j + i]
+            n += 1
 
-    return unit_mean
+        for j in range(20):
+            result += unit[j + i + 129]
+            n += 1
+
+    return result / n
 
 
-# QUESTION: Are stimuli independent of each other?
 def unit_std_baseline_activity(unit, mean) -> float:
-    intervals = [
-        np.hstack((unit[i: i + 20], unit[(i + 150 - 20): i + 150]))
-        for i in range(0, len(unit), 150)
-    ]
+    result = 0
 
-    unit_std: float = reduce(lambda x, y: x + sum(y), intervals, 0) / len(intervals)
+    for i in range(0, len(unit), 150):
+        for j in range(20):
+            result += (unit[j + i] - mean) ** 2
 
-    return 1
+        for j in range(20):
+            result += (unit[j + i + 129] - mean) ** 2
 
+    n = len(unit) / 150 * 40
 
-# QUESTION: Is this function needed?
-def units_mean_baseline_activity(data) -> float:
-    units_mean = (
-            reduce(lambda x, y: x + unit_mean_baseline_activity(y), data, 0) / data.shape[0]
-    )
-
-    return units_mean
-
-
-# QUESTION: Are units independent of each other?
-#           Is this function needed?
-def units_std_baseline_activity(data, mean) -> float:
-    pass
+    return math.sqrt(result / n)
 
 
 # Stimulus-evoked firing rates per unit
-def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | list[float]:
+def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | List[float]:
     if "mean" in kwargs:
         baseline_activity_mean = kwargs["mean"]
     else:
@@ -118,7 +111,6 @@ def population_evoked_firing_rate(
 
 
 # QUESTION: Make this parallel?
-# FIXME: Not returning the last 100 records
 def population_spike_rate(
         resp_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | List[float] | None:
@@ -139,6 +131,7 @@ def population_spike_rate(
     elif isinstance(t, tuple):
         a = int(t[0] * 100)
         b = int(t[1] * 100)
+
         if a < 0 or b > resp_signal.shape[1]:
             raise IndexError(
                 "Invalid t: {}. Size of data: {}".format(t, resp_signal.shape[1])
@@ -168,5 +161,5 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    ab = population_spike_rate(resp, (0, 1.5))
-    ba = population_evoked_firing_rate(stim, (0, 1.5))
+    # ab = population_spike_rate(resp, (0, 1.5))
+    # ba = population_evoked_firing_rate(stim, (0, 1.5))

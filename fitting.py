@@ -17,26 +17,12 @@ from tools import load_state, save_state, load_datafile, splitting_recording
 def simple_linear_model(
         stim_signal: RasterizedSignal, resp_signal: RasterizedSignal, d: int
 ) -> Tuple[float, float]:
-    # b = (x'x)^-1(x'y)
-    # y: response
-    # x: stimuli
-    print(stim_signal.shape, resp_signal.shape)
-    interval = (1, stim_signal.shape[1] / 100)
+    # First 27 seconds is data validation
+    interval = (27, stim_signal.shape[1] / 100)
 
-    # [0.00161091 0.07375191]
-
-    y = np.array(population_spike_rate(resp_signal, interval)).reshape(-1, 1)
-    x = np.array(population_evoked_firing_rate(stim_signal, interval)).reshape(-1, 1)
-    x = np.hstack((x, np.ones((x.shape[0], 1))))
-    print(x.shape, y.shape)
-
-    x_t = x.T
-    x_tx = np.matmul(x_t, x)
-    inv = np.linalg.pinv(x_tx)
-    x_ty = np.matmul(x_t, y)
-    b = np.matmul(inv, x_ty)
-
-    return b.flatten()
+    y = np.array(population_spike_rate(resp_signal, interval))
+    x = np.array(population_evoked_firing_rate(stim_signal, interval))
+    print(y)
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ def print_data(data: RasterizedSignal, name="Data"):
     print()
 
 
-def signal_channels(signal: SignalBase, display: bool = False) -> List[str]:
+def signal_channels(signal: RasterizedSignal, display: bool = False) -> List[str]:
     channels = signal.chans
 
     if display:
