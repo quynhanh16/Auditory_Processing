@@ -3,7 +3,7 @@
 
 # Packages
 import math
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 # NEMS Packages
@@ -13,7 +13,6 @@ from nems.tools.signal import RasterizedSignal
 from tools import load_state, save_state, load_datafile, splitting_recording
 
 
-# QUESTION: Return list of floats or a numpy array
 # TODO: Write unit tests
 
 
@@ -45,11 +44,11 @@ def unit_std_baseline_activity(unit, mean) -> float:
 
     n = len(unit) / 150 * 40
 
-    return math.sqrt(result / n)
+    return math.sqrt(result / (n - 1))
 
 
 # Stimulus-evoked firing rates per unit
-def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | List[float]:
+def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | np.array(float):
     if "mean" in kwargs:
         baseline_activity_mean = kwargs["mean"]
     else:
@@ -68,7 +67,7 @@ def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | List[float
 # QUESTION: Make this parallel?
 def population_evoked_firing_rate(
         stim_signal: RasterizedSignal, t: float | Tuple[float, float]
-) -> float | List[float] | None:
+) -> float | np.array(float) | None:
     if isinstance(t, float):
         if t * 100 < 0 or t * 100 > stim_signal.shape[1]:
             raise IndexError(
@@ -105,7 +104,7 @@ def population_evoked_firing_rate(
 
         result /= stim_signal.shape[0]
 
-        return result.tolist()
+        return result
 
     return None
 
@@ -113,7 +112,7 @@ def population_evoked_firing_rate(
 # QUESTION: Make this parallel?
 def population_spike_rate(
         resp_signal: RasterizedSignal, t: float | Tuple[float, float]
-) -> float | List[float] | None:
+) -> float | np.array(float) | None:
     if isinstance(t, float):
         if t * 100 < 0 or t * 100 > resp_signal.shape[1]:
             raise IndexError(
@@ -144,7 +143,7 @@ def population_spike_rate(
 
         result /= resp_signal.shape[0]
 
-        return result.tolist()
+        return result
 
     return None
 
@@ -162,4 +161,4 @@ if __name__ == "__main__":
         stim, resp = load_state(state_file)
 
     # ab = population_spike_rate(resp, (0, 1.5))
-    # ba = population_evoked_firing_rate(stim, (0, 1.5))
+    # ba = population_evoked_firing_rate(resp, (0, 1.5))

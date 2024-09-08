@@ -6,17 +6,32 @@ import math
 import os
 import pickle
 import re
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import List, Tuple, Dict
 
+import numpy as np
 # NEMS Packages
 from nems.tools import epoch
 from nems.tools.recording import load_recording, Recording
 from nems.tools.signal import RasterizedSignal, SignalBase
 
 
-# TODO: Create a function that gives a summary about a Signal (RasterizedSignal? Recording?)
+# TODO: Add function that gives a summary about a Signal (RasterizedSignal? Recording?)
 # TODO: Add descriptions to all the tool functions
-# TODO: Add compatability to
+# TODO: Add function to read the results of models
+# TODO: Make a function that prepares the stimuli array for the linear model
+
+
+@dataclass
+class RecordingData:
+    coefficients: np.array
+    intercepts: np.array
+    d: int
+    m: int
+    r2: float
+    mae: float
+    mse: float
+    function: str
 
 
 # Development Tools
@@ -69,6 +84,35 @@ def load_datafile(path: str, display=False) -> Recording:
     return recordings
 
 
+def load_single_sites(dir_path: str, display=False) -> Dict[str, Recording]:
+    single_site_recordings: Dict[str, Recording] = {}
+    single_site_paths = os.listdir(dir_path)
+    single_site_names = list(simplify_site_names(single_site_paths).keys())
+
+    for i in range(len(single_site_paths)):
+        path = os.path.join(dir_path, single_site_paths[i])
+        single_site_recordings[single_site_names[i]] = load_datafile(path)
+
+    print(single_site_recordings)
+    print(single_site_recordings["ARM031a"]["resp"].shape)
+    return single_site_recordings
+
+
+def simplify_site_names(names: List[str]) -> Dict[str, int]:
+    pattern = r"A1_(.*?)_"
+    site_names: Dict[str, int] = {}
+
+    for name in names:
+        match = re.search(pattern, name)
+        if match:
+            if match.group(1) in site_names:
+                site_names[match.group(1)] += 1
+            else:
+                site_names[match.group(1)] = 1
+
+    return site_names
+
+
 # Loading recordings
 # Current recordings are divided into resp, stim, and mask_est
 # mark_est does not contain anything
@@ -109,7 +153,7 @@ def single_site_similar_stim(site: str, top_n: int = 0) -> None:
     pattern = r"rec\d+_(.*?)_excerpt"
     path = os.path.join("A1_single_sites", site)
     recording = load_datafile(path)
-    resp = recording["resp"].rasterize()
+    resp = recording["resp"]
     stim = {}
 
     val_epochs = epoch.epoch_names_matching(resp.epochs, "^STIM_00")
@@ -166,3 +210,66 @@ def multiple_site_similar_stim(sites: List[str], top_n: int) -> None:
             print(f"({stimulus}: {occ})", end=" | ")
 
         print("\n")
+
+
+def open_file(file_path: str) -> str:
+    try:
+        file = open(file_path, "r+")
+    except FileNotFoundError:
+        file = open(file_path, "w+")
+
+    content = file.read()
+    file.close()
+    return content
+
+
+def result_text(results: RecordingData, n: int) -> str:
+    coefficients = "["
+    intercepts = "["
+
+    coefficients += ", ".join([str(x) for x in results.coefficients]) + "]"
+    intercepts += ", ".join([str(x) for x in results.intercepts]) + "]"
+
+    display = f"""Trial: n={n}, d={results.d}, m={results.m}
+Results:
+\tCoefficients: {coefficients}
+\tIntercepts: {intercepts}
+\tR2: {results.r2}
+\tMSE: {results.mse}
+\tMAE: {results.mae}
+\tFunction: {results.function}\n"""
+
+    return display
+
+
+def save_results(results: RecordingData, file_path: str = "results.txt") -> None:
+    n_trial = 0
+    content = open_file(file_path)
+
+    if len(content) != 0:
+        prev_text = content.split("\n")
+        n_trial = int(prev_text[0][-1])
+        with open(file_path, "r+") as file:
+            lines = file.readlines()
+            lines[0] = lines[0][0:-2] + str(n_trial + 1) + "\n"
+
+            file.seek(0)
+            file.writelines(lines)
+            file.truncate()
+            file.close()
+
+    with open(file_path, "a+") as file:
+        n_trial += 1
+        new_trial = result_text(results, n_trial)
+
+        if n_trial == 1:
+            file.write(f"N: {n_trial}\n")
+
+        file.write(new_trial)
+
+
+if __name__ == "__main__":
+    test_result = RecordingData(
+        np.array([0, 1, 2]), np.array([0]), 1, 2, 1.3, 4.432, 5.432, "test_function"
+    )
+    save_results(test_result, "results.txt")

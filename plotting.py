@@ -13,6 +13,7 @@ from nems.tools.signal import RasterizedSignal
 
 # Computing
 from computing import population_spike_rate, population_evoked_firing_rate
+from fitting import simple_linear_model
 # Tools
 from tools import (
     load_datafile,
@@ -85,7 +86,6 @@ def resp_raster_plot(
 ) -> None:
     stimuli, index = time_to_stimuli(signal, interval)
     raster_signal = signal.rasterize()
-    n_stimuli = len(stimuli)
 
     if isinstance(cells, str):
         cells = [cells]
@@ -122,11 +122,13 @@ def stim_heatmap(signal: RasterizedSignal, interval: Tuple[float, float]) -> Any
     plt.suptitle("Stimuli Heatmap")
     plt.title(f"Stimulation Heatmap")
     plt.ylabel("Sample (Hz)")
-    plt.xlabel("Time from stimulus onset (s)")
+    plt.xlabel("Time (s)")
     plt.tight_layout()
     plt.show()
 
 
+# FIXME: Fix the xticks of the graphs
+# FIXME: Problem with intervals greater than 0
 def population_spike_rate_plot(
         resp_signal: RasterizedSignal, interval: Tuple[float, float]
 ) -> None:
@@ -151,6 +153,8 @@ def population_spike_rate_plot(
     plt.show()
 
 
+# FIXME: The linear regression expects a 2d array (n x (d * m)). Currently
+#        giving a 1d array.
 def spike_rate_and_stimulus(
         stim_signal: RasterizedSignal,
         resp_signal: RasterizedSignal,
@@ -163,24 +167,32 @@ def spike_rate_and_stimulus(
     ax3 = fig.add_subplot(gs[2])
 
     # Population evoked firing rate
-    y_stim = population_evoked_firing_rate(stim_signal, interval)
-    # ax[0].set_title(f"Stimulus Spike Rate")
-    ax1.plot(y_stim)
+    y_resp = population_evoked_firing_rate(resp_signal, interval)
+    ax1.plot(y_resp * 100)
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Response (Hz)")
 
     # Population spike rate
     y_resp = population_spike_rate(resp_signal, interval)
     # ax[1].set_title(f"Population Spike Rate")
-    ax2.plot(y_resp)
+    pred_model = simple_linear_model(stim_signal, resp, 10, 18, False, False)
+    preds = pred_model.predict(y_resp)[interval[0]: interval[1]]
+    ax2.plot(y_resp * 100)
+    ax2.plot(preds * 100)
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Response (Hz)")
 
     # Heatmap
-    r = stim_signal.extract_epoch(np.array([[interval[0], interval[1]]]))
+    r = stim_signal.extract_epoch(np.array([list(interval)]))
     y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
     y = [round(i, 2) for i in y]
     r = r[0, :, :]
 
-    sns.heatmap(r, cmap="viridis", fmt="d", ax=ax3, cbar=False)
+    sns.heatmap(r, cmap="viridis", fmt="d", ax=ax3)
     ax3.set_yticks(np.arange(1, 19, 1))
     ax3.set_yticklabels(labels=y, rotation=0)
+    ax3.set_ylabel("Sample (Hz)")
+    ax3.set_xlabel("Time (s)")
     ax3.invert_yaxis()
     ax3.set_xticks(np.arange(0, (interval[1] - interval[0]) * 100 + 1, 50))
     ax3.set_xticklabels(np.arange(interval[0], interval[1] + 0.5, 0.5), rotation=0)
