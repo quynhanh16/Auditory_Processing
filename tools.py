@@ -19,7 +19,6 @@ from nems.tools.signal import RasterizedSignal, SignalBase
 # TODO: Add function that gives a summary about a Signal (RasterizedSignal? Recording?)
 # TODO: Add descriptions to all the tool functions
 # TODO: Add function to read the results of models
-# TODO: Make a function that prepares the stimuli array for the linear model
 
 
 @dataclass
@@ -32,6 +31,29 @@ class RecordingData:
     mae: float
     mse: float
     function: str
+
+
+def prepare_stimuli(
+        stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
+) -> np.ndarray:
+    stim_data = stim_signal.extract_epoch(np.array([list(interval)]))[0, :m]
+
+    if d > 0:
+        buffer = np.zeros((m, d))
+        stim_data = np.hstack((buffer, stim_data))
+
+    length_stim = stim_data.shape[1]
+    stim_matrix = np.array([stim_data[0][d:length_stim]]).T
+
+    for i in range(m):
+        for j in range(d + 1):
+            if i == 0 and j == 0:
+                continue
+            new = stim_data[i][d - j: length_stim - j].T
+            new = np.reshape(new, (new.shape[0], 1))
+            stim_matrix = np.hstack((stim_matrix, new))
+
+    return stim_matrix
 
 
 # Development Tools
@@ -230,7 +252,7 @@ def result_text(results: RecordingData, n: int) -> str:
     coefficients += ", ".join([str(x) for x in results.coefficients]) + "]"
     intercepts += ", ".join([str(x) for x in results.intercepts]) + "]"
 
-    display = f"""Trial: n={n}, d={results.d}, m={results.m}
+    display = f"""Trial: n={n}, m={results.m}, d={results.d}
 Results:
 \tCoefficients: {coefficients}
 \tIntercepts: {intercepts}

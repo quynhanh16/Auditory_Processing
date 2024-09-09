@@ -64,7 +64,6 @@ def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | np.array(f
     return result
 
 
-# QUESTION: Make this parallel?
 def population_evoked_firing_rate(
         stim_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:
@@ -109,7 +108,6 @@ def population_evoked_firing_rate(
     return None
 
 
-# QUESTION: Make this parallel?
 def population_spike_rate(
         resp_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:

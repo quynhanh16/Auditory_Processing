@@ -20,37 +20,30 @@ from tools import (
     splitting_recording,
     RecordingData,
     save_results,
+    prepare_stimuli,
 )
+
+
+# TODO: Create Linear Non-Linear model
 
 
 def simple_linear_model(
         stim_signal: RasterizedSignal,
         resp_signal: RasterizedSignal,
-        d: int,
         m: int,
+        d: int,
         save: bool = True,
         display: bool = True,
+        **kwargs
 ) -> Any:
     # First 27 seconds is data validation
     interval = (27, stim_signal.shape[1] / 100)
 
-    stim_data = stim_signal.extract_epoch(np.array([list(interval)]))[0, :m]
-
-    if d > 0:
-        buffer = np.zeros((m, d))
-        stim_data = np.hstack((buffer, stim_data))
-
-    length_stim = stim_data.shape[1]
-    X = np.array([stim_data[0][d:length_stim]]).T
-    y = population_spike_rate(resp_signal, interval)
-
-    for i in range(m):
-        for j in range(d + 1):
-            if i == 0 and j == 0:
-                continue
-            new = stim_data[i][d - j: length_stim - j].T
-            new = np.reshape(new, (new.shape[0], 1))
-            X = np.hstack((X, new))
+    X = prepare_stimuli(stim_signal, interval, m, d)
+    if "function" in kwargs:
+        y = kwargs["function"](resp_signal, interval)
+    else:
+        y = population_spike_rate(resp_signal, interval)
 
     model = LinearRegression()
     model.fit(X, y)
@@ -88,4 +81,4 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    b = simple_linear_model(stim, resp, 3, 18, True, False)
+    b = simple_linear_model(stim, resp, 18, 5, True, False)
