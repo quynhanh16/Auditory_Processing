@@ -147,7 +147,7 @@ def population_spike_rate_plot(
     else:
         f, ax = plt.subplots(figsize=(10, 6))
 
-    ax.plot(x, y)
+    ax.plot(x, y, label="Actual")
     ax.set_title(f"Population Spike Rate")
     ax.set_xticks(
         np.arange(interval[0], interval[1] + 0.5, 0.5),
@@ -186,12 +186,13 @@ def linear_model_plot(
     )
     X = prepare_stimuli(stim_signal, interval, 18, 20)
     y_pred = model.predict(X) * 100
-    ax1.plot(y_resp * 100)
-    ax1.plot(y_pred)
+    ax1.plot(y_resp * 100, label="Actual")
+    ax1.plot(y_pred, label="Predicted")
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("Rate (Hz)")
     ax1.set_xticks(np.arange(0, (interval[1] - interval[0]) * 100 + 50, 50))
     ax1.set_xticklabels(np.arange(interval[0], interval[1] + 0.5, 0.5), rotation=0)
+    ax1.legend()
 
     # Population spike rate
     population_spike_rate_plot(resp_signal, interval, False, ax=ax2)
@@ -199,7 +200,8 @@ def linear_model_plot(
     X = prepare_stimuli(stim_signal, interval, 18, 20)
     y_pred = model.predict(X) * 100
     x = np.arange(interval[0], interval[1], 0.01)
-    ax2.plot(x, y_pred)
+    ax2.plot(x, y_pred, label="Predicted")
+    ax2.legend()
 
     # Heatmap
     stim_heatmap(stim_signal, interval, False, ax=ax3)
