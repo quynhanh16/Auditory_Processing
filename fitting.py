@@ -4,6 +4,7 @@
 # Packages
 from typing import Any
 
+import joblib
 import numpy as np
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
@@ -72,6 +73,7 @@ def simple_linear_model(
     alpha = 0.00001
     model = Ridge(alpha=alpha)
     model.fit(X, y)
+    joblib.dump(model, "nr_linear_model.pkl")
     coefficients = model.coef_
     intercepts = np.array([model.intercept_])
     print("Getting Statistics")

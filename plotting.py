@@ -3,6 +3,7 @@
 
 from typing import List, Tuple
 
+import joblib  # Use pickle
 import matplotlib.pyplot as plt
 import numpy as np
 # Packages
@@ -215,11 +216,18 @@ def actual_predicted_plot(
         stim_signal: RasterizedSignal,
         resp_signal: RasterizedSignal,
         interval: Tuple[float, float],
+        model,
 ) -> None:
-    plt.figure()
-    plt.scatter()
     X = prepare_stimuli(stim_signal, interval, 18, 20)
-    y = prepare_response(stim)
+    y = prepare_response(resp_signal, interval, 20) * 100
+    predictions = model.predict(X) * 100
+    print(y.shape, predictions.shape)
+    plt.figure()
+    plt.scatter(np.mean(y, axis=0), predictions, s=5, alpha=0.5)
+    plt.title("Actual vs. Predicted (Validation Data)")
+    plt.xlabel("Actual (Hz)")
+    plt.ylabel("Predicted (Hz)")
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -230,7 +238,7 @@ if __name__ == "__main__":
     if state is None:
         rec = load_datafile(tgz_file, True)
         stim, resp = splitting_recording(rec, True)
-        save_state(state_file, stim, resp)
+        save_state(state_file, (stim, resp))
     else:
         stim, resp = load_state(state_file)
 
@@ -239,4 +247,5 @@ if __name__ == "__main__":
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
     # stim_heatmap(stim, (27, 30))
     # population_spike_rate_plot(resp, (3, 6))
-    linear_model_plot(stim, resp, (1.5, 3.0))
+    # linear_model_plot(stim, resp, (1.5, 3.0))
+    actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
