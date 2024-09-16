@@ -6,6 +6,7 @@ import math
 from typing import Tuple
 
 import numpy as np
+
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
 
@@ -65,7 +66,7 @@ def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | np.array(f
 
 
 def population_evoked_firing_rate(
-        stim_signal: RasterizedSignal, t: float | Tuple[float, float]
+    stim_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:
     if isinstance(t, float):
         if t * 100 < 0 or t * 100 > stim_signal.shape[1]:
@@ -109,7 +110,7 @@ def population_evoked_firing_rate(
 
 
 def population_spike_rate(
-        resp_signal: RasterizedSignal, t: float | Tuple[float, float]
+    resp_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:
     if isinstance(t, float):
         if t * 100 < 0 or t * 100 > resp_signal.shape[1]:

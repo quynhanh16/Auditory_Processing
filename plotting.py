@@ -6,15 +6,18 @@ from typing import List, Tuple
 import joblib  # Use pickle
 import matplotlib.pyplot as plt
 import numpy as np
+
 # Packages
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
 
 # Computing
 from computing import population_spike_rate, population_evoked_firing_rate
 from fitting import simple_linear_model
+
 # Tools
 from tools import (
     load_datafile,
@@ -36,10 +39,10 @@ global all_cellids
 # TODO: Make the plot size dynamic
 #       Make a simpler version of this function
 def resp_spike_rate_plot(
-        signal: RasterizedSignal,
-        sec_interval: (float, float),
-        cells: [str],
-        hist: bool = False,
+    signal: RasterizedSignal,
+    sec_interval: (float, float),
+    cells: [str],
+    hist: bool = False,
 ) -> None:
     stimuli, index = time_to_stimuli(signal, sec_interval)
     n_cells = len(cells)
@@ -55,14 +58,14 @@ def resp_spike_rate_plot(
             x = x.tolist()
             if j == 0:
                 frame_data = data.extract_epoch(stimuli[j])[
-                             0, 0, int(sec_interval[0] * 10 / 15):
-                             ].tolist()
+                    0, 0, int(sec_interval[0] * 10 / 15) :
+                ].tolist()
                 a = [0 for i in range(150 - len(frame_data))]
                 frame_data = a + frame_data
             elif j == n_stimuli - 1:
                 frame_data = data.extract_epoch(stimuli[j])[
-                             0, 0, : int(sec_interval[1] * 100 - t0)
-                             ].tolist()
+                    0, 0, : int(sec_interval[1] * 100 - t0)
+                ].tolist()
                 frame_data += [0 for i in range(150 - len(frame_data))]
             else:
                 frame_data = data.extract_epoch(stimuli[j])[0, 0, :]
@@ -81,7 +84,7 @@ def resp_spike_rate_plot(
 
 # TODO: Use start and end in seconds when extracting epochs
 def resp_raster_plot(
-        signal: RasterizedSignal, interval: (float, float), cells: str | List[str]
+    signal: RasterizedSignal, interval: (float, float), cells: str | List[str]
 ) -> None:
     raster_signal = signal.rasterize()
 
@@ -106,10 +109,10 @@ def resp_raster_plot(
 
 # Stimuli Heatmap
 def stim_heatmap(
-        signal: RasterizedSignal,
-        interval: Tuple[float, float],
-        display: bool = True,
-        **kwargs,
+    signal: RasterizedSignal,
+    interval: Tuple[float, float],
+    display: bool = True,
+    **kwargs,
 ) -> None:
     r = signal.extract_epoch(np.array([list(interval)]))
     y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
@@ -136,10 +139,10 @@ def stim_heatmap(
 
 
 def population_spike_rate_plot(
-        resp_signal: RasterizedSignal,
-        interval: Tuple[float, float],
-        display: bool = True,
-        **kwargs,
+    resp_signal: RasterizedSignal,
+    interval: Tuple[float, float],
+    display: bool = True,
+    **kwargs,
 ) -> None:
     y = population_spike_rate(resp_signal, interval) * 100
     x = np.arange(interval[0], interval[1], 0.01)
@@ -165,9 +168,9 @@ def population_spike_rate_plot(
 
 # Question: Are we still doing evoked-spike firing rate?
 def linear_model_plot(
-        stim_signal: RasterizedSignal,
-        resp_signal: RasterizedSignal,
-        interval: Tuple[float, float],
+    stim_signal: RasterizedSignal,
+    resp_signal: RasterizedSignal,
+    interval: Tuple[float, float],
 ) -> None:
     fig = plt.figure(figsize=(12, 10))
     gs = GridSpec(3, 1, height_ratios=[1, 1, 1.25])
@@ -213,10 +216,10 @@ def linear_model_plot(
 
 
 def actual_predicted_plot(
-        stim_signal: RasterizedSignal,
-        resp_signal: RasterizedSignal,
-        interval: Tuple[float, float],
-        model,
+    stim_signal: RasterizedSignal,
+    resp_signal: RasterizedSignal,
+    interval: Tuple[float, float],
+    model,
 ) -> None:
     X = prepare_stimuli(stim_signal, interval, 18, 20)
     y = prepare_response(resp_signal, interval, 20) * 100

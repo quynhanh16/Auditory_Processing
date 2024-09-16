@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict
 
 import numpy as np
+
 # NEMS Packages
 from nems.tools import epoch
 from nems.tools.recording import load_recording, Recording
@@ -37,7 +38,7 @@ class RecordingData:
 
 
 def prepare_stimuli(
-        stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
+    stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
 ) -> np.ndarray:
     stim_data = stim_signal.extract_epoch(np.array([list(interval)]))[0, :m]
 
@@ -55,7 +56,7 @@ def prepare_stimuli(
         matrix = np.empty((0, d + 1))
         for j in range(length_stim):
             if (j % 150) >= d:
-                data = stim_data[i][j - d: j + 1]
+                data = stim_data[i][j - d : j + 1]
                 matrix = np.vstack((matrix, data))
         if stim_matrix.size == 0:
             stim_matrix = matrix
@@ -67,7 +68,7 @@ def prepare_stimuli(
 
 
 def prepare_response(
-        resp_signal: RasterizedSignal, interval: Tuple[float, float], d: int
+    resp_signal: RasterizedSignal, interval: Tuple[float, float], d: int
 ) -> np.array:
     resp_data = resp_signal.extract_epoch(np.array([list(interval)]))[0]
     resp_matrix = np.array([])
@@ -170,7 +171,7 @@ def simplify_site_names(names: List[str]) -> Dict[str, int]:
 # Current recordings are divided into resp, stim, and mask_est
 # mark_est does not contain anything
 def splitting_recording(
-        recording: Recording, display=False
+    recording: Recording, display=False
 ) -> Tuple[RasterizedSignal, RasterizedSignal]:
     if display:
         print_step("SPLITTING RECORDING")
@@ -184,7 +185,7 @@ def splitting_recording(
 # Time to Stimuli
 # Takes an interval, in seconds, and returns the stimulus in that interval
 def time_to_stimuli(
-        signal: SignalBase, interval: Tuple[float, float]
+    signal: SignalBase, interval: Tuple[float, float]
 ) -> (List[str], Tuple[float, float]):
     if interval[0] < 0:
         raise ValueError("Start Index out of range")
@@ -193,13 +194,13 @@ def time_to_stimuli(
     val_epochs = epoch.epoch_names_matching(signal.epochs, "^STIM_00")
 
     if index[1] == len(val_epochs):
-        return val_epochs[index[0]:], index
+        return val_epochs[index[0] :], index
     elif index[1] > len(val_epochs) - 1:
         raise ValueError("End Index out of range")
     elif index[1] != 0 and interval[1] % 1.5 == 0.0:
-        return val_epochs[index[0]: index[1]], index
+        return val_epochs[index[0] : index[1]], index
 
-    return val_epochs[index[0]: index[1] + 1], index
+    return val_epochs[index[0] : index[1] + 1], index
 
 
 def single_site_similar_stim(site: str, top_n: int = 0) -> None:
