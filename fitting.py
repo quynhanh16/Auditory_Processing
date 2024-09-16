@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # Computing
@@ -21,6 +21,7 @@ from tools import (
     RecordingData,
     save_results,
     prepare_stimuli,
+    prepare_response,
 )
 
 
@@ -34,21 +35,46 @@ def simple_linear_model(
         d: int,
         save: bool = True,
         display: bool = True,
-        **kwargs
+        **kwargs,
 ) -> Any:
     # First 27 seconds is data validation
     interval = (27, stim_signal.shape[1] / 100)
+    # interval = (27, 27.5)
 
-    X = prepare_stimuli(stim_signal, interval, m, d)
-    if "function" in kwargs:
-        y = kwargs["function"](resp_signal, interval)
+    print("Preparing data")
+    print("Preparing x")
+    stim_state_file = f"stim_m{m}_d{d}_t{interval}.pkl"
+    stim_state = load_state(stim_state_file)
+    if stim_state is None:
+        X = prepare_stimuli(stim_signal, interval, m, d)
+        save_state(stim_state_file, X)
     else:
-        y = population_spike_rate(resp_signal, interval)
+        X = load_state(stim_state_file)
 
-    model = LinearRegression()
+    print(X.shape)
+    print("Preparing y")
+    resp_state_file = f"resp_m{m}_t{interval}.pkl"
+    resp_state = load_state(resp_state_file)
+    if resp_state is None:
+        y = prepare_response(resp_signal, interval, d)
+        save_state(resp_state_file, y)
+    else:
+        y = load_state(resp_state_file)
+    print(y.shape)
+
+    print("Using function")
+    if "function" in kwargs:
+        y = kwargs["function"](y, interval)
+    else:
+        y = np.mean(y, axis=0)
+
+    print("Fitting Model")
+    alpha = 0.00001
+    model = Ridge(alpha=alpha)
     model.fit(X, y)
     coefficients = model.coef_
     intercepts = np.array([model.intercept_])
+    print("Getting Statistics")
     r2_score = model.score(X, y)
     mae = mean_absolute_error(y, model.predict(X))
     mse = mean_squared_error(y, model.predict(X))
@@ -59,9 +85,12 @@ def simple_linear_model(
             intercepts,
             d,
             m,
+            "L2",
+            alpha,
             r2_score,
             mae,
             mse,
+            interval,
             population_spike_rate.__name__,
         )
         save_results(results)
@@ -77,8 +106,8 @@ if __name__ == "__main__":
     if state is None:
         rec = load_datafile(tgz_file, True)
         stim, resp = splitting_recording(rec, True)
-        save_state(state_file, stim, resp)
+        save_state(state_file, (stim, resp))
     else:
         stim, resp = load_state(state_file)
 
-    b = simple_linear_model(stim, resp, 18, 5, True, False)
+    b = simple_linear_model(stim, resp, 18, 20, True, False)

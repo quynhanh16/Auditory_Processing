@@ -22,6 +22,7 @@ from tools import (
     save_state,
     load_state,
     prepare_stimuli,
+    prepare_response,
 )
 
 # from main import file_list
@@ -208,6 +209,17 @@ def linear_model_plot(
 
     plt.tight_layout()
     plt.show()
+
+
+def actual_predicted_plot(
+        stim_signal: RasterizedSignal,
+        resp_signal: RasterizedSignal,
+        interval: Tuple[float, float],
+) -> None:
+    plt.figure()
+    plt.scatter()
+    X = prepare_stimuli(stim_signal, interval, 18, 20)
+    y = prepare_response(stim)
 
 
 if __name__ == "__main__":
