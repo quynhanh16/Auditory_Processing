@@ -6,9 +6,12 @@ nems/
 DRX006b/
 NEMS_/
 __pycache__/
+figures/
 
 *.zip
 *.tgz
+*.pkl
+*.txt
 
 
 FIX.md
