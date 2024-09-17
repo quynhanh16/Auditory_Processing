@@ -331,6 +331,21 @@ def save_results(results: RecordingData, file_path: str = "results.txt") -> None
         file.write(new_trial)
 
 
+def coeff_channels(coeff: List[float], m: int, d: int) -> np.array:
+    result = []
+
+    # len of coeff list
+    row = 0
+    for i in range(m * (d + 1)):
+        if i % (d + 1) == 0:
+            result.append([coeff[i]])
+            row += 0 if i == 0 else 1
+        else:
+            result[row].append(coeff[i])
+
+    return np.array(result)
+
+
 if __name__ == "__main__":
     tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
 
@@ -343,8 +358,13 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    t = prepare_stimuli(stim, (0, 0.2), 18, 2)
-    print(t.shape)
+    # t = prepare_stimuli(stim, (0, 0.2), 18, 2)
+    # print(t.shape)
+    #
+    # r = prepare_response(resp, (0, 0.2), 2)
+    # print(r.shape)
+    import joblib
 
-    r = prepare_response(resp, (0, 0.2), 2)
-    print(r.shape)
+    model = joblib.load("nr_linear_model.pkl")
+    coeff = coeff_channels(model.coef_, 18, 20)
+    print(coeff.shape)

@@ -77,6 +77,7 @@ def simple_linear_model(
     model.fit(X, y)
     joblib.dump(model, "nr_linear_model.pkl")
     coefficients = model.coef_
+    print(coefficients)
     intercepts = np.array([model.intercept_])
     print("Getting Statistics")
     r2_score = model.score(X, y)
@@ -114,4 +115,4 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    b = simple_linear_model(stim, resp, 18, 20, True, False)
+    b = simple_linear_model(stim, resp, 18, 20, False, False)

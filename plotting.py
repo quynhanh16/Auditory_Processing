@@ -27,9 +27,8 @@ from tools import (
     load_state,
     prepare_stimuli,
     prepare_response,
+    coeff_channels,
 )
-
-# from main import file_list
 
 global all_cellids
 
@@ -82,7 +81,6 @@ def resp_spike_rate_plot(
     plt.show()
 
 
-# TODO: Use start and end in seconds when extracting epochs
 def resp_raster_plot(
     signal: RasterizedSignal, interval: (float, float), cells: str | List[str]
 ) -> None:
@@ -233,6 +231,19 @@ def actual_predicted_plot(
     plt.show()
 
 
+def coefficient_heatmap(coefficients: List[float], m: int, d: int) -> None:
+    coeff_matrix = coeff_channels(coefficients, m, d)
+    plt.figure()
+    plt.suptitle("Coefficient Heatmap")
+    ax = sns.heatmap(coeff_matrix, cmap="flare", fmt="d")
+    ax.invert_yaxis()
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Channels")
+    ax.set_xticklabels(np.arange(1, d + 2, 1))
+    ax.set_yticklabels(np.arange(1, m + 1, 1))
+    plt.show()
+
+
 if __name__ == "__main__":
     tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
 
@@ -251,4 +262,5 @@ if __name__ == "__main__":
     # stim_heatmap(stim, (27, 30))
     # population_spike_rate_plot(resp, (3, 6))
     # linear_model_plot(stim, resp, (1.5, 3.0))
-    actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
+    # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
+    coefficient_heatmap(joblib.load("nr_linear_model.pkl").coef_, 18, 20)
