@@ -6,15 +6,14 @@ from typing import Any
 
 import joblib
 import numpy as np
-
 # NEMS Packages
 from nems.tools.signal import RasterizedSignal
-from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from scipy.optimize import least_squares
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Computing
 from computing import population_spike_rate
-
 # Tools
 from tools import (
     load_state,
@@ -73,11 +72,11 @@ def simple_linear_model(
 
     print("Fitting Model")
     alpha = 0.00001
-    model = Ridge(alpha=alpha)
+    # model = Ridge(alpha=alpha)
+    model = LinearRegression()
     model.fit(X, y)
     joblib.dump(model, "nr_linear_model.pkl")
     coefficients = model.coef_
-    print(coefficients)
     intercepts = np.array([model.intercept_])
     print("Getting Statistics")
     r2_score = model.score(X, y)
@@ -103,6 +102,44 @@ def simple_linear_model(
     return model
 
 
+def sigmoid(params, res):
+    a, b, c = params
+    return a / (1 + np.exp(b * (c - res)))
+
+
+def fl(params, res):
+    a, b, c, s = params
+    return b + a * np.exp(-np.exp(c * (res - s)))
+
+
+def residuals(params, x, y):
+    return y - fl(params, x)
+
+
+def non_linear(model, s, r):
+    r = np.mean(r, axis=0)
+    # theta = [np.max(r), 0.1, 0.1]
+    theta = [0.5, 0.5, 0.5, 0.5]
+
+    predictions = model.predict(s)
+
+    # nl_model = least_squares(residuals, theta, args=(predictions, r))
+    nl_model = least_squares(residuals, theta, args=(predictions, r))
+    import matplotlib.pyplot as plt
+
+    y = fl(nl_model.x, predictions)
+    # y = sigmoid(nl_model.x, predictions)
+    # print(y.shape, y[:5])
+    plt.plot(r[:100])
+    plt.plot(predictions[:100])
+    plt.plot(y[:100])
+    plt.show()
+
+    print(nl_model)
+    print(r2_score(r, predictions))
+    print(r2_score(r, y))
+
+
 if __name__ == "__main__":
     tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
 
@@ -115,4 +152,16 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
+    interval = (27, stim.shape[1] / 100)
+    m, d = 18, 20
+
+    stim_state_file = f"stim_m{m}_d{d}_t{interval}.pkl"
+    stim_state = load_state(stim_state_file)
+    X = load_state(stim_state_file)
+
+    resp_state_file = f"resp_m{m}_t{interval}.pkl"
+    resp_state = load_state(resp_state_file)
+    y = load_state(resp_state_file)
+
     b = simple_linear_model(stim, resp, 18, 20, False, False)
+    non_linear(joblib.load("nr_linear_model.pkl"), X, y)
