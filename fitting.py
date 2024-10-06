@@ -31,13 +31,13 @@ from tools import (
 
 
 def simple_linear_model(
-    stim_signal: RasterizedSignal,
-    resp_signal: RasterizedSignal,
-    m: int,
-    d: int,
-    save: bool = True,
-    display: bool = True,
-    **kwargs,
+        stim_signal: RasterizedSignal,
+        resp_signal: RasterizedSignal,
+        m: int,
+        d: int,
+        save: bool = True,
+        display: bool = True,
+        **kwargs,
 ) -> Any:
     # First 27 seconds is data validation
     interval = (27, stim_signal.shape[1] / 100)
@@ -112,27 +112,36 @@ def fl(params, res):
     return b + a * np.exp(-np.exp(c * (res - s)))
 
 
-def residuals(params, x, y):
-    return y - fl(params, x)
+def hyperbolic_tan(param, res):
+    a, b, c = param
+    result = a * np.tanh(b * (res - c))
+    return result * (result > 0)
+
+
+def residuals(params, x, r):
+    return r - hyperbolic_tan(params, x)
 
 
 def non_linear(model, s, r):
     r = np.mean(r, axis=0)
-    # theta = [np.max(r), 0.1, 0.1]
-    theta = [0.5, 0.5, 0.5, 0.5]
+    theta = [np.max(r), 0.1, 0.1]
+    # theta = [0.5, 0.5, 0.5, 0.5]
 
     predictions = model.predict(s)
 
-    # nl_model = least_squares(residuals, theta, args=(predictions, r))
     nl_model = least_squares(residuals, theta, args=(predictions, r))
     import matplotlib.pyplot as plt
 
-    y = fl(nl_model.x, predictions)
-    # y = sigmoid(nl_model.x, predictions)
+    # y = fl(nl_model.x, predictions)
+    print(nl_model.x)
+    y = hyperbolic_tan(nl_model.x, predictions)
     # print(y.shape, y[:5])
-    plt.plot(r[:100])
-    plt.plot(predictions[:100])
-    plt.plot(y[:100])
+    i1, i2 = 900, 1200
+    # plt.plot(r[i1:i2])
+    # plt.plot(predictions[i1:i2])
+    # plt.plot(y[i1:i2])
+    plt.scatter(predictions, y)
+    # plt.scatter(predictions, r)
     plt.show()
 
     print(nl_model)
@@ -164,4 +173,4 @@ if __name__ == "__main__":
     y = load_state(resp_state_file)
 
     b = simple_linear_model(stim, resp, 18, 20, False, False)
-    non_linear(joblib.load("nr_linear_model.pkl"), X, y)
+    # non_linear(joblib.load("nr_linear_model.pkl"), X, y)

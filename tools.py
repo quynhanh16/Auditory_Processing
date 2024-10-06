@@ -53,11 +53,13 @@ def prepare_stimuli(
     # print(stim_data)
 
     for i in range(m):
+        print(f"Preparing channel: {i}")
         matrix = np.empty((0, d + 1))
         for j in range(length_stim):
             if (j % 150) >= d:
                 data = stim_data[i][j - d : j + 1]
                 matrix = np.vstack((matrix, data))
+        print()
         if stim_matrix.size == 0:
             stim_matrix = matrix
         else:
