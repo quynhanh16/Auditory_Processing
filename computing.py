@@ -8,10 +8,10 @@ from typing import Tuple
 import numpy as np
 
 # NEMS Packages
-from nems.tools.signal import RasterizedSignal
+from tools.signal import RasterizedSignal
 
 # Tools
-from tools import load_state, save_state, load_datafile, splitting_recording
+from tools.utils import load_state, save_state, load_datafile, splitting_recording
 
 
 # TODO: Write unit tests
@@ -159,5 +159,5 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    # ab = population_spike_rate(resp, (0, 1.5))
+    ab = population_spike_rate(resp, (0, 1.5))
     # ba = population_evoked_firing_rate(resp, (0, 1.5))

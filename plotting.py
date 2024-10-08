@@ -12,14 +12,14 @@ import seaborn as sns
 from matplotlib.gridspec import GridSpec
 
 # NEMS Packages
-from nems.tools.signal import RasterizedSignal
+from tools.signal import RasterizedSignal
 
 # Computing
 from computing import population_spike_rate, population_evoked_firing_rate
 from fitting import simple_linear_model
 
 # Tools
-from tools import (
+from tools.utils import (
     load_datafile,
     splitting_recording,
     time_to_stimuli,
@@ -39,8 +39,8 @@ global all_cellids
 #       Make a simpler version of this function
 def resp_spike_rate_plot(
     signal: RasterizedSignal,
-    sec_interval: (float, float),
-    cells: [str],
+    sec_interval: Tuple[float, float],
+    cells: List[str],
     hist: bool = False,
 ) -> None:
     stimuli, index = time_to_stimuli(signal, sec_interval)
@@ -59,13 +59,13 @@ def resp_spike_rate_plot(
                 frame_data = data.extract_epoch(stimuli[j])[
                     0, 0, int(sec_interval[0] * 10 / 15) :
                 ].tolist()
-                a = [0 for i in range(150 - len(frame_data))]
+                a = [0 for _ in range(150 - len(frame_data))]
                 frame_data = a + frame_data
             elif j == n_stimuli - 1:
                 frame_data = data.extract_epoch(stimuli[j])[
                     0, 0, : int(sec_interval[1] * 100 - t0)
                 ].tolist()
-                frame_data += [0 for i in range(150 - len(frame_data))]
+                frame_data += [0 for _ in range(150 - len(frame_data))]
             else:
                 frame_data = data.extract_epoch(stimuli[j])[0, 0, :]
 
@@ -82,7 +82,7 @@ def resp_spike_rate_plot(
 
 
 def resp_raster_plot(
-    signal: RasterizedSignal, interval: (float, float), cells: str | List[str]
+    signal: RasterizedSignal, interval: Tuple[float, float], cells: str | List[str]
 ) -> None:
     raster_signal = signal.rasterize()
 
@@ -98,7 +98,8 @@ def resp_raster_plot(
     plt.scatter(x_sec, y, s=1, color="black")
     plt.xticks(np.arange(interval[0], interval[1] + 0.5, 0.5))
     plt.suptitle("Raster Plot")
-    plt.title(f"Cell: {", ".join(cells)}")
+    cells_print = ", ".join(cells)
+    plt.title(f"Cell: {cells_print}")
     plt.xlabel("Time (s)")
     plt.ylabel("Trial")
     plt.tight_layout()
@@ -148,7 +149,7 @@ def population_spike_rate_plot(
     if "ax" in kwargs.keys():
         ax = kwargs["ax"]
     else:
-        f, ax = plt.subplots(figsize=(10, 6))
+        _, ax = plt.subplots(figsize=(10, 6))
 
     ax.plot(x, y, label="Actual")
     ax.set_title(f"Population Spike Rate")
@@ -256,11 +257,10 @@ if __name__ == "__main__":
     else:
         stim, resp = load_state(state_file)
 
-    all_cellids = resp.chans
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
-    # stim_heatmap(stim, (27, 30))
+    stim_heatmap(stim, (27, 30))
     # population_spike_rate_plot(resp, (3, 6))
     # linear_model_plot(stim, resp, (1.5, 3.0))
     # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
-    coefficient_heatmap(joblib.load("nr_linear_model.pkl").coef_, 18, 20)
+    # coefficient_heatmap(joblib.load("nr_linear_model.pkl").coef_, 18, 20)

@@ -6,16 +6,18 @@ from typing import Any
 
 import joblib
 import numpy as np
+
 # NEMS Packages
-from nems.tools.signal import RasterizedSignal
+from tools.signal import RasterizedSignal
 from scipy.optimize import least_squares
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Computing
 from computing import population_spike_rate
+
 # Tools
-from tools import (
+from tools.utils import (
     load_state,
     save_state,
     load_datafile,
@@ -31,13 +33,13 @@ from tools import (
 
 
 def simple_linear_model(
-        stim_signal: RasterizedSignal,
-        resp_signal: RasterizedSignal,
-        m: int,
-        d: int,
-        save: bool = True,
-        display: bool = True,
-        **kwargs,
+    stim_signal: RasterizedSignal,
+    resp_signal: RasterizedSignal,
+    m: int,
+    d: int,
+    save: bool = True,
+    display: bool = True,
+    **kwargs,
 ) -> Any:
     # First 27 seconds is data validation
     interval = (27, stim_signal.shape[1] / 100)

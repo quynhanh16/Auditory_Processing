@@ -7,15 +7,14 @@ import os
 import pickle
 import re
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 import numpy as np
 
 # NEMS Packages
-from nems.tools import epoch
-from nems.tools.recording import load_recording, Recording
-from nems.tools.signal import RasterizedSignal, SignalBase
-
+from tools import epoch
+from tools.recording import load_recording, Recording
+from tools.signal import RasterizedSignal, SignalBase
 
 # TODO: Add function that gives a summary about a Signal (RasterizedSignal? Recording?)
 # TODO: Add descriptions to all the tool functions
@@ -33,7 +32,7 @@ class RecordingData:
     r2: float
     mae: float
     mse: float
-    interval: (float, float)
+    interval: Tuple[float, float]
     function: str
 
 
@@ -87,16 +86,16 @@ def prepare_response(
         else:
             resp_matrix = np.vstack((resp_matrix, matrix))
 
-    return resp_matrix
+    return np.sum(resp_matrix, axis=0)
 
 
 # Development Tools
 def save_state(filename: str, data) -> None:
     with open(filename, "wb") as f:
-        pickle.dump((data), f)
+        pickle.dump(data, f)
 
 
-def load_state(filename: str):
+def load_state(filename: str) -> Any:
     try:
         with open(filename, "rb") as f:
             return pickle.load(f)
@@ -349,24 +348,13 @@ def coeff_channels(coeff: List[float], m: int, d: int) -> np.array:
 
 
 if __name__ == "__main__":
-    tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
+    tgz_file: str = "../A1_NAT4_ozgf.fs100.ch18.tgz"
 
-    state_file = "state.pkl"
+    state_file = "../state.pkl"
     state = load_state(state_file)
     if state is None:
         rec = load_datafile(tgz_file, True)
         stim, resp = splitting_recording(rec, True)
-        save_state(state_file, stim, resp)
+        save_state(state_file, (stim, resp))
     else:
         stim, resp = load_state(state_file)
-
-    # t = prepare_stimuli(stim, (0, 0.2), 18, 2)
-    # print(t.shape)
-    #
-    # r = prepare_response(resp, (0, 0.2), 2)
-    # print(r.shape)
-    import joblib
-
-    model = joblib.load("nr_linear_model.pkl")
-    coeff = coeff_channels(model.coef_, 18, 20)
-    print(coeff.shape)

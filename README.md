@@ -16,22 +16,16 @@ before running the program. Ensure you have Python version 3.9 or 3.10 installed
 1. **Clone the Auditory_Processing Repository**
 
    ```bash
-   git clone https://github.com/JonathanJT109/Auditory_Processing
+   git clone https://github.com/quynhanh16/Auditory_Processing.git
    ```
 
-2. **Clone the NEMS Repository**
-
-   ```bash
-   git clone https://github.com/LBHB/NEMS.git
-   ```
-
-3. **Create a Python Virtual Environment**
+2. **Create a Python Virtual Environment**
 
    ```bash
    python -m venv ./nems-env
    ```
 
-4. **Activate the Virtual Environment**
+3. **Activate the Virtual Environment**
 
    On Windows:
 
@@ -45,19 +39,11 @@ before running the program. Ensure you have Python version 3.9 or 3.10 installed
    source nems-env/bin/activate
    ```
 
-5. **Install NEMS and Required Packages**
+4. **Install NEMS and Required Packages**
 
    ```bash
-   pip install NEMS
+   pip install requirements.txt
    ```
-
-6. **Rename the NEMS Directory**
-
-   Rename the directory named `NEMS` to `NEMS_` (or any other name you prefer).
-
-7. **Move the `nems` Directory**
-
-   Move the `nems` directory located inside the newly renamed `NEMS_` directory to your home directory.
 
 ### Downloading the data
 
