@@ -1,15 +1,14 @@
 # File: plotting.py
 # Purpose: Visual analysis of the recordings.
 
-from typing import List, Tuple
-
-import joblib  # Use pickle
-import matplotlib.pyplot as plt
-import numpy as np
 
 # Packages
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+from typing import List, Tuple
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
 
 # NEMS Packages
 from tools.signal import RasterizedSignal
@@ -27,22 +26,27 @@ from tools.utils import (
     load_state,
     prepare_stimuli,
     prepare_response,
-    coeff_channels,
+    coefficient_channels,
 )
 
 global all_cellids
 
 
-# Response: Multiple Spike Count Plot
-# Plots the spike count located in the response data.
-# TODO: Make the plot size dynamic
-#       Make a simpler version of this function
 def resp_spike_rate_plot(
-    signal: RasterizedSignal,
-    sec_interval: Tuple[float, float],
-    cells: List[str],
-    hist: bool = False,
+        signal: RasterizedSignal,
+        sec_interval: Tuple[float, float],
+        cells: List[str],
+        hist: bool = False,
 ) -> None:
+    """
+    Plot the response data of given cells during a given an interval.
+
+    :param signal:
+    :param sec_interval:
+    :param cells:
+    :param hist:
+    :return: None
+    """
     stimuli, index = time_to_stimuli(signal, sec_interval)
     n_cells = len(cells)
     n_stimuli = len(stimuli)
@@ -57,14 +61,14 @@ def resp_spike_rate_plot(
             x = x.tolist()
             if j == 0:
                 frame_data = data.extract_epoch(stimuli[j])[
-                    0, 0, int(sec_interval[0] * 10 / 15) :
-                ].tolist()
+                             0, 0, int(sec_interval[0] * 10 / 15):
+                             ].tolist()
                 a = [0 for _ in range(150 - len(frame_data))]
                 frame_data = a + frame_data
             elif j == n_stimuli - 1:
                 frame_data = data.extract_epoch(stimuli[j])[
-                    0, 0, : int(sec_interval[1] * 100 - t0)
-                ].tolist()
+                             0, 0, : int(sec_interval[1] * 100 - t0)
+                             ].tolist()
                 frame_data += [0 for _ in range(150 - len(frame_data))]
             else:
                 frame_data = data.extract_epoch(stimuli[j])[0, 0, :]
@@ -82,8 +86,16 @@ def resp_spike_rate_plot(
 
 
 def resp_raster_plot(
-    signal: RasterizedSignal, interval: Tuple[float, float], cells: str | List[str]
+        signal: RasterizedSignal, interval: Tuple[float, float], cells: str | List[str]
 ) -> None:
+    """
+    Plot a rater plot of the response data of given cells during a given interval.
+
+    :param signal:
+    :param interval:
+    :param cells:
+    :return: None
+    """
     raster_signal = signal.rasterize()
 
     if isinstance(cells, str):
@@ -108,11 +120,20 @@ def resp_raster_plot(
 
 # Stimuli Heatmap
 def stim_heatmap(
-    signal: RasterizedSignal,
-    interval: Tuple[float, float],
-    display: bool = True,
-    **kwargs,
+        signal: RasterizedSignal,
+        interval: Tuple[float, float],
+        display: bool = True,
+        **kwargs,
 ) -> None:
+    """
+    Plot a heatmap with the coefficients of the stimuli data during a given time interval.
+
+    :param signal:
+    :param interval:
+    :param display:
+    :param kwargs:
+    :return:
+    """
     r = signal.extract_epoch(np.array([list(interval)]))
     y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
     y = [round(i, 2) for i in y]
@@ -138,11 +159,20 @@ def stim_heatmap(
 
 
 def population_spike_rate_plot(
-    resp_signal: RasterizedSignal,
-    interval: Tuple[float, float],
-    display: bool = True,
-    **kwargs,
+        resp_signal: RasterizedSignal,
+        interval: Tuple[float, float],
+        display: bool = True,
+        **kwargs,
 ) -> None:
+    """
+    Plot the population spike rate of the response data of all cells during a given interval.
+
+    :param resp_signal:
+    :param interval:
+    :param display:
+    :param kwargs:
+    :return: None
+    """
     y = population_spike_rate(resp_signal, interval) * 100
     x = np.arange(interval[0], interval[1], 0.01)
 
@@ -165,12 +195,21 @@ def population_spike_rate_plot(
         plt.show()
 
 
-# Question: Are we still doing evoked-spike firing rate?
 def linear_model_plot(
-    stim_signal: RasterizedSignal,
-    resp_signal: RasterizedSignal,
-    interval: Tuple[float, float],
+        stim_signal: RasterizedSignal,
+        resp_signal: RasterizedSignal,
+        interval: Tuple[float, float],
 ) -> None:
+    """
+    Plot the response data population spike rate.
+    Plot the predicted response spike rate by the linear model.
+    Plot a heatmap with the coefficients of the stimuli data during a given time interval.
+
+    :param stim_signal:
+    :param resp_signal:
+    :param interval:
+    :return:
+    """
     fig = plt.figure(figsize=(12, 10))
     gs = GridSpec(3, 1, height_ratios=[1, 1, 1.25])
     ax1 = fig.add_subplot(gs[0])
@@ -215,11 +254,20 @@ def linear_model_plot(
 
 
 def actual_predicted_plot(
-    stim_signal: RasterizedSignal,
-    resp_signal: RasterizedSignal,
-    interval: Tuple[float, float],
-    model,
+        stim_signal: RasterizedSignal,
+        resp_signal: RasterizedSignal,
+        interval: Tuple[float, float],
+        model,
 ) -> None:
+    """
+    Plot the response data population spike rate against the predicted response spike rate.
+
+    :param stim_signal:
+    :param resp_signal:
+    :param interval:
+    :param model:
+    :return: None
+    """
     X = prepare_stimuli(stim_signal, interval, 18, 20)
     y = prepare_response(resp_signal, interval, 20) * 100
     predictions = model.predict(X) * 100
@@ -233,7 +281,15 @@ def actual_predicted_plot(
 
 
 def coefficient_heatmap(coefficients: List[float], m: int, d: int) -> None:
-    coeff_matrix = coeff_channels(coefficients, m, d)
+    """
+    Plot heatmap of coefficients of linear model.
+
+    :param coefficients:
+    :param m:
+    :param d:
+    :return: None
+    """
+    coeff_matrix = coefficient_channels(coefficients, m, d)
     plt.figure()
     plt.suptitle("Coefficient Heatmap")
     ax = sns.heatmap(coeff_matrix, cmap="flare", fmt="d")
@@ -259,7 +315,7 @@ if __name__ == "__main__":
 
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
-    stim_heatmap(stim, (27, 30))
+    # stim_heatmap(stim, (27, 30))
     # population_spike_rate_plot(resp, (3, 6))
     # linear_model_plot(stim, resp, (1.5, 3.0))
     # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))

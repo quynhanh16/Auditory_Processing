@@ -16,7 +16,7 @@ import base64
 
 from requests.exceptions import ConnectionError
 
-#from nems0.utils import NumpyEncoder, json_numpy_obj_hook
+# from nems0.utils import NumpyEncoder, json_numpy_obj_hook
 
 
 log = logging.getLogger(__name__)
@@ -44,6 +44,8 @@ MOVED TO utils.py
 class NumpyEncoder(jsonlib.JSONEncoder):
 def json_numpy_obj_hook(dct):
 """
+
+
 class NumpyEncoder(jsonlib.JSONEncoder):
     '''
     For serializing Numpy arrays safely as JSONs. Modified from:
@@ -57,14 +59,6 @@ class NumpyEncoder(jsonlib.JSONEncoder):
         holding dtype, shape and the data. data is encoded as a list,
         which makes it text-readable.
         """
-        from nems0.distributions.distribution import Distribution
-        from nems0.modules import NemsModule
-
-        if issubclass(type(obj), Distribution):
-            return obj.tolist()
-
-        if issubclass(type(obj), NemsModule):
-            return obj.data_dict
 
         if isinstance(obj, np.ndarray):
             # currently disabling b64 encoding because it doesn't work and
@@ -77,7 +71,7 @@ class NumpyEncoder(jsonlib.JSONEncoder):
                     obj_data = obj.data
                 else:
                     cont_obj = np.ascontiguousarray(obj)
-                    assert(cont_obj.flags['C_CONTIGUOUS'])
+                    assert (cont_obj.flags['C_CONTIGUOUS'])
                     obj_data = cont_obj.data
                 data_encoded = base64.b64encode(obj_data)
             else:
@@ -95,6 +89,7 @@ class NumpyEncoder(jsonlib.JSONEncoder):
         # Let the base class default method raise the TypeError
         return jsonlib.JSONEncoder.default(self, obj)
 
+
 def json_numpy_obj_hook(dct):
     """
     Decodes a previously encoded numpy ndarray with proper shape and dtype,
@@ -108,19 +103,15 @@ def json_numpy_obj_hook(dct):
         # data = base64.b64decode(dct['__ndarray__']) 
         data = dct['__ndarray__']
         return np.asarray(data, dct['dtype']).reshape(dct['shape'])
-    
+
     special_keys = ['level', 'coefficients', 'amplitude', 'kappa',
                     'base', 'shift', 'mean', 'sd', 'u', 'tau', 'offset']
-    
+
     if isinstance(dct, dict) and any(k in special_keys for k in dct):
         # print("json_numpy_obj_hook: {0} type {1}".format(dct,type(dct)))
-        for k in dct: 
+        for k in dct:
             if type(dct[k]) is list:
                 dct[k] = np.asarray(dct[k])
-        
-    if '_KWR_ARGS' in dct:
-        from nems0.registry import KeywordRegistry
-        return KeywordRegistry.from_json(dct)
 
     return dct
 
@@ -246,8 +237,8 @@ def load_resource(uri, raw=False):
         if hasattr(r, 'data'):
             return r.data
         else:
-            file_extension=r.url.split(".")[-1]
-            if raw | (file_extension=='m'):
+            file_extension = r.url.split(".")[-1]
+            if raw | (file_extension == 'm'):
                 # matlab code? Just return text
                 return r.text
             # otherwise, assume JSON
@@ -261,8 +252,8 @@ def load_resource(uri, raw=False):
                 log.exception(e)
     elif local_uri(uri):
         filepath = local_uri(uri)
-        file_extension=filepath.split(".")[-1]
-        if raw | (file_extension=='m'):
+        file_extension = filepath.split(".")[-1]
+        if raw | (file_extension == 'm'):
             with open(filepath, mode='r') as f:
                 # matlab code? Just return text
                 return f.read()

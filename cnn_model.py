@@ -1,3 +1,9 @@
+# Packages
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras import layers, models
+
+# Tools
 from tools.utils import (
     load_datafile,
     splitting_recording,
@@ -7,20 +13,12 @@ from tools.utils import (
     load_state,
 )
 
-import matplotlib.pyplot as plt
 
-# TensorFlow Package
-import tensorflow as tf
-from tensorflow.keras import layers, models
-import numpy as np
-import random
-import os
+def reshape_stim(stimuli):
+    return stimuli.T
 
 
-def process_stimuli(stim):
-    return stim.reshape((stim.shape[0], -1, 21))
-
-
+# I give up
 def run(stimuli, response):
     print("Preparing x")
     stim_state_file = f"stim_m{m}_d{d}_t{interval}.pkl"
@@ -31,6 +29,8 @@ def run(stimuli, response):
     else:
         X = load_state(stim_state_file)
 
+    X = reshape_stim(X)
+
     print("Preparing y")
     resp_state_file = f"resp_m{m}_t{interval}.pkl"
     resp_state = load_state(resp_state_file)
@@ -40,19 +40,20 @@ def run(stimuli, response):
     else:
         y = load_state(resp_state_file)
 
-    X = process_stimuli(X)
     print(X.shape, y.shape)
 
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(1, (3, 3), activation="relu", input_shape=(18, 21, 1)))
+    model.add(layers.Conv2D(1, (3, 3), activation="relu", input_shape=(378, 74750, 1)))
 
     model.add(layers.MaxPool2D((3, 3)))
 
     model.add(layers.Flatten())
 
-    model.add(layers.Dense(1, activation="relu"))
+    model.add(layers.Dense(128, activation="relu"))
+
+    model.add(layers.Dense(74750))
 
     model.compile(
         optimizer="adam", loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"]
@@ -60,7 +61,7 @@ def run(stimuli, response):
 
     model.summary()
 
-    history = model.fit(X, y, epochs=20)
+    model.fit(X, y, epochs=20, batch_size=32)
     pred = model.predict(X)
     # plt.plot(history.history["accuracy"], label="accuracy")
     plt.plot(y[:300], label="Actual")

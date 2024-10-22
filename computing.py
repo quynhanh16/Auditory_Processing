@@ -1,6 +1,3 @@
-# File: computing.py
-# Purpose: Calculations of the recordings
-
 # Packages
 import math
 from typing import Tuple
@@ -14,10 +11,13 @@ from tools.signal import RasterizedSignal
 from tools.utils import load_state, save_state, load_datafile, splitting_recording
 
 
-# TODO: Write unit tests
-
-
 def unit_mean_baseline_activity(unit) -> float:
+    """
+    Return the mean baseline activity of a given array.
+
+    :param unit:
+    :return: float
+    """
     result = 0
     n = 0
 
@@ -34,6 +34,13 @@ def unit_mean_baseline_activity(unit) -> float:
 
 
 def unit_std_baseline_activity(unit, mean) -> float:
+    """
+    Return the baseline activity of a given array.
+
+    :param unit:
+    :param mean:
+    :return: float
+    """
     result = 0
 
     for i in range(0, len(unit), 150):
@@ -48,8 +55,15 @@ def unit_std_baseline_activity(unit, mean) -> float:
     return math.sqrt(result / (n - 1))
 
 
-# Stimulus-evoked firing rates per unit
 def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | np.array(float):
+    """
+    Return the evoked firing rate of a given array.
+
+    :param data:
+    :param t:
+    :param kwargs:
+    :return: float | np.array(float)
+    """
     if "mean" in kwargs:
         baseline_activity_mean = kwargs["mean"]
     else:
@@ -66,9 +80,16 @@ def evoked_firing_rate(data: np.array, t: float, **kwargs) -> float | np.array(f
 
 
 def population_evoked_firing_rate(
-    stim_signal: RasterizedSignal, t: float | Tuple[float, float]
+        stim_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:
-    if isinstance(t, float):
+    """
+    Return the evoked firing rate of a given stimuli RasterizedSignal object.
+
+    :param stim_signal:
+    :param t:
+    :return: float | np.array(float) | None
+    """
+    if isinstance(t, float):  # For a single time point.
         if t * 100 < 0 or t * 100 > stim_signal.shape[1]:
             raise IndexError(
                 "Invalid t: {}. Size of data: {}".format(t, stim_signal.shape[1])
@@ -84,7 +105,7 @@ def population_evoked_firing_rate(
 
         result /= stim_signal.shape[0]
         return result
-    elif isinstance(t, tuple):
+    elif isinstance(t, tuple):  # For an interval.
         a = int(t[0] * 100)
         b = int(t[1] * 100)
 
@@ -110,9 +131,16 @@ def population_evoked_firing_rate(
 
 
 def population_spike_rate(
-    resp_signal: RasterizedSignal, t: float | Tuple[float, float]
+        resp_signal: RasterizedSignal, t: float | Tuple[float, float]
 ) -> float | np.array(float) | None:
-    if isinstance(t, float):
+    """
+    Return the population spike rate of a given array.
+
+    :param resp_signal:
+    :param t:
+    :return: float | np.array(float) | None
+    """
+    if isinstance(t, float):  # For a single time point.
         if t * 100 < 0 or t * 100 > resp_signal.shape[1]:
             raise IndexError(
                 "Invalid t: {}. Size of data: {}".format(t, resp_signal.shape[1])
@@ -126,7 +154,7 @@ def population_spike_rate(
         result /= resp_signal.shape[0]
 
         return result
-    elif isinstance(t, tuple):
+    elif isinstance(t, tuple):  # For an interval.
         a = int(t[0] * 100)
         b = int(t[1] * 100)
 
@@ -155,7 +183,7 @@ if __name__ == "__main__":
     if state is None:
         rec = load_datafile(tgz_file, True)
         stim, resp = splitting_recording(rec, True)
-        save_state(state_file, stim, resp)
+        save_state(state_file, (stim, resp))
     else:
         stim, resp = load_state(state_file)
 

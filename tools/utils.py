@@ -6,6 +6,8 @@ import math
 import os
 import pickle
 import re
+import h5py
+
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
@@ -16,6 +18,7 @@ from tools import epoch
 from tools.recording import load_recording, Recording
 from tools.signal import RasterizedSignal, SignalBase
 
+
 # TODO: Add function that gives a summary about a Signal (RasterizedSignal? Recording?)
 # TODO: Add descriptions to all the tool functions
 # TODO: Add function to read the results of models
@@ -23,6 +26,9 @@ from tools.signal import RasterizedSignal, SignalBase
 
 @dataclass
 class RecordingData:
+    """
+    Used to format model results.
+    """
     coefficients: np.array
     intercepts: np.array
     d: int
@@ -36,27 +42,40 @@ class RecordingData:
     function: str
 
 
+def save_results(filename: str, label: str, info: Any) -> None:
+    with h5py.File(filename, "w") as f:
+        f.create_dataset(label, data=info)
+
+
+def read_results(filename: str, label: str):
+    with h5py.File(filename, "r") as f:
+        data = f[label][:]
+        return data
+
+
 def prepare_stimuli(
-    stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
+        stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
 ) -> np.ndarray:
+    """
+    Return a list with stimuli
+
+    :param stim_signal: Stimulation signal
+    :param interval: Time interval
+    :param m: Number of channels
+    :param d: N number of previous stimuli
+    :return: np.ndarray
+    """
     stim_data = stim_signal.extract_epoch(np.array([list(interval)]))[0, :m]
 
-    # Used for buffering
-    # if d > 0:
-    #     buffer = np.zeros((m, d))
-    #     stim_data = np.hstack((buffer, stim_data))
-
     length_stim = stim_data.shape[1]
-    # stim_matrix = np.array([stim_data[0][d:length_stim]]).T
     stim_matrix = np.array([])
-    # print(stim_data)
 
     for i in range(m):
         print(f"Preparing channel: {i}")
         matrix = np.empty((0, d + 1))
         for j in range(length_stim):
             if (j % 150) >= d:
-                data = stim_data[i][j - d : j + 1]
+                data = stim_data[i][j - d: j + 1]
                 matrix = np.vstack((matrix, data))
         print()
         if stim_matrix.size == 0:
@@ -64,13 +83,23 @@ def prepare_stimuli(
         else:
             stim_matrix = np.hstack((stim_matrix, matrix))
 
-    # print(stim_matrix)
     return stim_matrix
 
 
 def prepare_response(
-    resp_signal: RasterizedSignal, interval: Tuple[float, float], d: int
+        resp_signal: RasterizedSignal, interval: Tuple[float, float], d: int
 ) -> np.array:
+    """
+    Prepare the response recording by ignoring the first d data points per interval.
+    In this case, the interval is 150, therefore, the function will return only
+    data points between 0.2 - 1.5 seconds of the recording.
+
+    :param resp_signal:
+    :param interval:
+    :param d: N number of previous stimuli
+    :type d: int
+    :return: np.array
+    """
     resp_data = resp_signal.extract_epoch(np.array([list(interval)]))[0]
     resp_matrix = np.array([])
 
@@ -90,12 +119,25 @@ def prepare_response(
 
 
 # Development Tools
-def save_state(filename: str, data) -> None:
+def save_state(filename: str, data: Any) -> None:
+    """
+    Save an object as a pickle file with name *filename*.
+
+    :param filename:
+    :param data:
+    :return: None
+    """
     with open(filename, "wb") as f:
         pickle.dump(data, f)
 
 
 def load_state(filename: str) -> Any:
+    """
+    Load an object from a pickle file with name *filename*.
+
+    :param filename:
+    :return: Any
+    """
     try:
         with open(filename, "rb") as f:
             return pickle.load(f)
@@ -105,13 +147,27 @@ def load_state(filename: str) -> Any:
 
 # General Tools
 def print_step(text: str, end=False) -> None:
+    """
+    Simple function to print a step.
+
+    :param text:
+    :param end:
+    :return:
+    """
     print("-" * 30)
     print(f"\n{text:^30}\n")
     if end:
         print("-" * 30)
 
 
-def print_data(data: RasterizedSignal, name="Data"):
+def print_data(data: RasterizedSignal, name="Data") -> None:
+    """
+    Print RasterizedSignal data with its shape.
+
+    :param data:
+    :param name:
+    :return: None
+    """
     print("-" * 20)
     print(name)
     print(data.as_continuous())
@@ -120,6 +176,13 @@ def print_data(data: RasterizedSignal, name="Data"):
 
 
 def signal_channels(signal: RasterizedSignal, display: bool = False) -> List[str]:
+    """
+    Return the signal channels of Rasterized Signal. If display is True, also print channels.
+
+    :param signal:
+    :param display:
+    :return: List[str]
+    """
     channels = signal.chans
 
     if display:
@@ -129,6 +192,13 @@ def signal_channels(signal: RasterizedSignal, display: bool = False) -> List[str
 
 
 def load_datafile(path: str, display=False) -> Recording:
+    """
+    Return the recording data from a tgz file.
+
+    :param path:
+    :param display:
+    :return: Recording
+    """
     if display:
         print_step("LOADING FILES")
 
@@ -140,6 +210,13 @@ def load_datafile(path: str, display=False) -> Recording:
 
 
 def load_single_sites(dir_path: str, display=False) -> Dict[str, Recording]:
+    """
+    Return the recording data from single sites data.
+
+    :param dir_path:
+    :param display:
+    :return: Dict[str, Recording]
+    """
     single_site_recordings: Dict[str, Recording] = {}
     single_site_paths = os.listdir(dir_path)
     single_site_names = list(simplify_site_names(single_site_paths).keys())
@@ -154,6 +231,12 @@ def load_single_sites(dir_path: str, display=False) -> Dict[str, Recording]:
 
 
 def simplify_site_names(names: List[str]) -> Dict[str, int]:
+    """
+    Simplify single site recordings names and return number of occurrences of recording name.
+
+    :param names:
+    :return: Dict[str, int]
+    """
     pattern = r"A1_(.*?)_"
     site_names: Dict[str, int] = {}
 
@@ -169,11 +252,18 @@ def simplify_site_names(names: List[str]) -> Dict[str, int]:
 
 
 # Loading recordings
-# Current recordings are divided into resp, stim, and mask_est
-# mark_est does not contain anything
 def splitting_recording(
-    recording: Recording, display=False
+        recording: Recording, display=False
 ) -> Tuple[RasterizedSignal, RasterizedSignal]:
+    """
+    Divides tgz files into stimuli and response data.
+
+    Current recordings are divided into resp, stim, and mask_est
+
+    :param recording:
+    :param display:
+    :return: Tuple[RasterizedSignal, RasterizedSignal]
+    """
     if display:
         print_step("SPLITTING RECORDING")
 
@@ -183,11 +273,16 @@ def splitting_recording(
     return stimuli, response
 
 
-# Time to Stimuli
-# Takes an interval, in seconds, and returns the stimulus in that interval
 def time_to_stimuli(
-    signal: SignalBase, interval: Tuple[float, float]
+        signal: SignalBase, interval: Tuple[float, float]
 ) -> (List[str], Tuple[float, float]):
+    """
+    Takes an interval, in seconds, and returns the stimulus in that interval
+
+    :param signal:
+    :param interval:
+    :return: (List[str], Tuple[float, float])
+    """
     if interval[0] < 0:
         raise ValueError("Start Index out of range")
 
@@ -195,16 +290,23 @@ def time_to_stimuli(
     val_epochs = epoch.epoch_names_matching(signal.epochs, "^STIM_00")
 
     if index[1] == len(val_epochs):
-        return val_epochs[index[0] :], index
+        return val_epochs[index[0]:], index
     elif index[1] > len(val_epochs) - 1:
         raise ValueError("End Index out of range")
     elif index[1] != 0 and interval[1] % 1.5 == 0.0:
-        return val_epochs[index[0] : index[1]], index
+        return val_epochs[index[0]: index[1]], index
 
-    return val_epochs[index[0] : index[1] + 1], index
+    return val_epochs[index[0]: index[1] + 1], index
 
 
 def single_site_similar_stim(site: str, top_n: int = 0) -> None:
+    """
+    Check if single site recording contain similar stimuli and print the top n.
+
+    :param site:
+    :param top_n:
+    :return: None
+    """
     pattern = r"rec\d+_(.*?)_excerpt"
     path = os.path.join("A1_single_sites", site)
     recording = load_datafile(path)
@@ -236,6 +338,13 @@ def single_site_similar_stim(site: str, top_n: int = 0) -> None:
 
 
 def multiple_site_similar_stim(sites: List[str], top_n: int) -> None:
+    """
+    Check and print if any of the recordings contain similar stimuli and print the top n.
+
+    :param sites:
+    :param top_n:
+    :return: None
+    """
     pattern = r"rec\d+_(.*?)_excerpt"
 
     for site in sites:
@@ -268,6 +377,12 @@ def multiple_site_similar_stim(sites: List[str], top_n: int) -> None:
 
 
 def open_file(file_path: str) -> str:
+    """
+    Open file and return content.
+
+    :param file_path:
+    :return: str
+    """
     try:
         file = open(file_path, "r+")
     except FileNotFoundError:
@@ -279,6 +394,13 @@ def open_file(file_path: str) -> str:
 
 
 def result_text(results: RecordingData, n: int) -> str:
+    """
+    Return formatted string with results of linear models.
+
+    :param results:
+    :param n:
+    :return: str
+    """
     coefficients = "["
     intercepts = "["
 
@@ -302,7 +424,14 @@ Results:
     return display
 
 
-def save_results(results: RecordingData, file_path: str = "results.txt") -> None:
+def save_results_txt(results: RecordingData, file_path: str = "results.txt") -> None:
+    """
+    Save results of linear models in txt format.
+
+    :param results:
+    :param file_path:
+    :return: None
+    """
     n_trial = 0
     content = open_file(file_path)
 
@@ -332,17 +461,24 @@ def save_results(results: RecordingData, file_path: str = "results.txt") -> None
         file.write(new_trial)
 
 
-def coeff_channels(coeff: List[float], m: int, d: int) -> np.array:
+def coefficient_channels(coefficient: List[float], m: int, d: int) -> np.array:
+    """
+    Returned rasterized matrix of channels.
+
+    :param coefficient:
+    :param m:
+    :param d:
+    :return: np.array
+    """
     result = []
 
-    # len of coeff list
     row = 0
     for i in range(m * (d + 1)):
         if i % (d + 1) == 0:
-            result.append([coeff[i]])
+            result.append([coefficient[i]])
             row += 0 if i == 0 else 1
         else:
-            result[row].append(coeff[i])
+            result[row].append(coefficient[i])
 
     return np.array(result)
 
