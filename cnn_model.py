@@ -1,6 +1,7 @@
 # Packages
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, models
 
 # Tools
@@ -8,7 +9,6 @@ from tools.utils import (
     load_datafile,
     splitting_recording,
     save_state,
-    prepare_stimuli,
     prepare_response,
     load_state,
 )
@@ -26,15 +26,11 @@ def reshape_stim(stimuli):
 # I give up
 def run(stimuli, response):
     print("Preparing x")
-    stim_state_file = f"stim_m{m}_d{d}_t{interval}.pkl"
-    stim_state = load_state(stim_state_file)
-    if stim_state is None:
-        X = prepare_stimuli(stimuli, interval, m, d)
-        save_state(stim_state_file, X)
-    else:
-        X = load_state(stim_state_file)
+    stim_state_file = f"x_model.pkl"
+    X = load_state(stim_state_file)
 
-    X = reshape_stim(X)
+    print(X.shape)
+    # X = reshape_stim(X)
 
     print("Preparing y")
     resp_state_file = f"resp_m{m}_t{interval}.pkl"
@@ -47,16 +43,19 @@ def run(stimuli, response):
 
     print(X.shape, y.shape)
 
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(1, (3, 3), activation="relu", input_shape=(21, 18, 1)))
+    model.add(layers.Conv2D(70, (3, 3), activation="relu", input_shape=(21, 18, 1)))
+
+    model.add(layers.Conv2D(80, (3, 3), activation="relu"))
 
     model.add(layers.MaxPool2D((3, 3)))
 
     model.add(layers.Flatten())
 
-    model.add(layers.Dense(128, activation="relu"))
+    model.add(layers.Dense(100, activation="relu"))
 
     model.add(layers.Dense(1))
 
@@ -64,17 +63,26 @@ def run(stimuli, response):
         optimizer="adam", loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"]
     )
 
-    model.summary()
-
-    history = model.fit(X, y.T, epochs=20)
+    history = model.fit(X_train, y_train.T, epochs=20, validation_data=(X_val, y_val.T))
     pred = model.predict(X)
-    plt.plot(history.history["accuracy"], label="accuracy")
-    # plt.plot(y[:300], label="Actual")
-    # plt.plot(pred[:300], label="Predicted")
+
+    plt.plot(history.history['loss'], label='Training loss')
+    plt.plot(history.history['val_loss'], label='Validation loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.ylim([0.5, 1])
+    plt.legend(loc='lower right')
+    plt.show()
+
+    plt.plot(y[:300], label="Actual")
+    plt.plot(pred[:300], label="Predicted")
     plt.xlabel("Time")
     plt.ylabel("Response")
     plt.legend()
     plt.show()
+
+    model.summary()
+    model.save('1Dx2-CNN.keras')
 
 
 if __name__ == "__main__":
