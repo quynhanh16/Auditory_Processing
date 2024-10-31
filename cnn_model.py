@@ -14,8 +14,13 @@ from tools.utils import (
 )
 
 
+# TODO: Make a function
+# TODO: Fix matrix
+# TODO: Return r2 score, and mean squared error.
 def reshape_stim(stimuli):
-    return stimuli.T
+    # 74750 * 378
+    stimuli = stimuli.reshape(74750, 21, 18)
+    return stimuli
 
 
 # I give up
@@ -45,7 +50,7 @@ def run(stimuli, response):
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(1, (3, 3), activation="relu", input_shape=(378, 74750, 1)))
+    model.add(layers.Conv2D(1, (3, 3), activation="relu", input_shape=(21, 18, 1)))
 
     model.add(layers.MaxPool2D((3, 3)))
 
@@ -53,7 +58,7 @@ def run(stimuli, response):
 
     model.add(layers.Dense(128, activation="relu"))
 
-    model.add(layers.Dense(74750))
+    model.add(layers.Dense(1))
 
     model.compile(
         optimizer="adam", loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"]
@@ -61,11 +66,11 @@ def run(stimuli, response):
 
     model.summary()
 
-    model.fit(X, y, epochs=20, batch_size=32)
+    history = model.fit(X, y.T, epochs=20)
     pred = model.predict(X)
-    # plt.plot(history.history["accuracy"], label="accuracy")
-    plt.plot(y[:300], label="Actual")
-    plt.plot(pred[:300], label="Predicted")
+    plt.plot(history.history["accuracy"], label="accuracy")
+    # plt.plot(y[:300], label="Actual")
+    # plt.plot(pred[:300], label="Predicted")
     plt.xlabel("Time")
     plt.ylabel("Response")
     plt.legend()
