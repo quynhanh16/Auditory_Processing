@@ -6,11 +6,10 @@ import math
 import os
 import pickle
 import re
-import h5py
-
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
+import h5py
 import numpy as np
 
 # NEMS Packages
@@ -115,7 +114,7 @@ def prepare_response(
         else:
             resp_matrix = np.vstack((resp_matrix, matrix))
 
-    return np.sum(resp_matrix, axis=0)
+    return resp_matrix
 
 
 # Development Tools

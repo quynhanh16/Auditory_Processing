@@ -17,11 +17,6 @@ from tools.utils import (
 # TODO: Make a function
 # TODO: Fix matrix
 # TODO: Return r2 score, and mean squared error.
-def reshape_stim(stimuli):
-    # 74750 * 378
-    stimuli = stimuli.reshape(74750, 21, 18)
-    return stimuli
-
 
 # I give up
 def run(stimuli, response):
@@ -81,7 +76,6 @@ def run(stimuli, response):
     plt.legend()
     plt.show()
 
-    model.summary()
     model.save('ours.keras')
 
 
