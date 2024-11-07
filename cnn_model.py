@@ -47,9 +47,7 @@ def run(stimuli, response):
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(70, (3, 3), activation="relu", input_shape=(21, 18, 1)))
-
-    model.add(layers.Conv2D(80, (3, 3), activation="relu"))
+    model.add(layers.Conv2D(10, (3, 3), activation="relu", input_shape=(21, 18, 1)))
 
     model.add(layers.MaxPool2D((3, 3)))
 
@@ -62,6 +60,8 @@ def run(stimuli, response):
     model.compile(
         optimizer="adam", loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"]
     )
+
+    model.summary()
 
     history = model.fit(X_train, y_train.T, epochs=20, validation_data=(X_val, y_val.T))
     pred = model.predict(X)
@@ -82,7 +82,7 @@ def run(stimuli, response):
     plt.show()
 
     model.summary()
-    model.save('1Dx2-CNN.keras')
+    model.save('ours.keras')
 
 
 if __name__ == "__main__":
