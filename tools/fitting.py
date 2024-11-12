@@ -13,7 +13,7 @@ from tools.signal import RasterizedSignal
 from scipy.optimize import least_squares
 
 # Computing
-from computing import population_spike_rate
+from tools.computing import population_spike_rate
 
 # Tools
 from tools.utils import (
@@ -94,7 +94,7 @@ def simple_linear_model(
     # Fit model.
     model.fit(X, y)
     # Save model to a pkl file.
-    joblib.dump(model, "nr_linear_model.pkl")
+    joblib.dump(model, "../nr_linear_model.pkl")
     coefficients = model.coef_
     intercepts = np.array([model.intercept_])
 
@@ -209,9 +209,9 @@ def non_linear(model, s, r):
 
 
 if __name__ == "__main__":
-    tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
+    tgz_file: str = "../A1_NAT4_ozgf.fs100.ch18.tgz"
 
-    state_file = "state.pkl"
+    state_file = "../state.pkl"
     state = load_state(state_file)
     if state is None:
         rec = load_datafile(tgz_file, True)
