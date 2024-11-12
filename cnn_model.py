@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, models
+import numpy as np
 
 # Tools
 from tools.utils import (
@@ -10,13 +11,42 @@ from tools.utils import (
     splitting_recording,
     save_state,
     prepare_response,
-    load_state,
+    load_state, prepare_stimuli,
 )
 
 
 # TODO: Make a function
 # TODO: Fix matrix
 # TODO: Return r2 score, and mean squared error.
+def test(model_path):
+    stim, resp = load_state("state.pkl")
+    model = tf.keras.models.load_model(model_path)
+    X = prepare_stimuli(stim, (0, 27), 18, 20)
+    y = prepare_response(resp, (0, 27), 20).T
+
+    print("Stimuli shape:", X.shape, "Response shape:", y.shape)
+
+    new_x = np.empty((X.shape[0], 21, 18))
+    for i in range(X.shape[0]):
+        for j in range(int(X.shape[1] / 18)):
+            for k in range(int(X.shape[1] / 21)):
+                new_x[i, j, k] = X[i, (18 * j) + k]
+
+    pred = model.predict(new_x)
+
+    actual = np.mean(y, axis=1)
+    print(pred.shape, actual.shape)
+    # prediction = np.mean(pred, axis=1)
+
+    # print("Mean Squared Error Individually:", mean_squared_error(pred, y))
+    # print("Mean Squared Error of Average:", mean_squared_error(actual, prediction))
+
+    plt.plot(actual[750:900], label="Actual", color="blue", alpha=0.8)
+    plt.plot(pred[750:900], label="Predicted", alpha=0.5, color="red")
+    plt.xlabel("Time")
+    plt.ylabel("Response")
+    plt.legend()
+    plt.show()
 
 # I give up
 def run(stimuli, response):
@@ -42,7 +72,9 @@ def run(stimuli, response):
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(10, (3, 3), activation="relu", input_shape=(21, 18, 1)))
+    model.add(layers.Conv2D(70, (3, 3), activation="relu", input_shape=(21, 18, 1)))
+
+    model.add(layers.Conv2D(80, (3, 3), activation="relu"))
 
     model.add(layers.MaxPool2D((3, 3)))
 
@@ -53,30 +85,27 @@ def run(stimuli, response):
     model.add(layers.Dense(1))
 
     model.compile(
-        optimizer="adam", loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"]
+        optimizer="adam", loss=tf.keras.losses.MeanSquaredError(),
+        metrics=[
+            tf.keras.metrics.MeanAbsoluteError(),
+            tf.keras.metrics.R2Score(),
+        ]
     )
 
     model.summary()
 
-    history = model.fit(X_train, y_train.T, epochs=20, validation_data=(X_val, y_val.T))
+    # history = model.fit(X_train, y_train.T, epochs=20, validation_data=(X_val, y_val.T))
+    model = tf.keras.models.load_model("ours2D-70-80.keras")
     pred = model.predict(X)
 
-    plt.plot(history.history['loss'], label='Training loss')
-    plt.plot(history.history['val_loss'], label='Validation loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.ylim([0.5, 1])
-    plt.legend(loc='lower right')
-    plt.show()
-
-    plt.plot(y[:300], label="Actual")
-    plt.plot(pred[:300], label="Predicted")
+    plt.plot(y[900:1200], label="Actual")
+    plt.plot(pred[900:1200], label="Predicted")
     plt.xlabel("Time")
     plt.ylabel("Response")
     plt.legend()
     plt.show()
 
-    model.save('ours.keras')
+    model.save('ours2D-70-80.keras')
 
 
 if __name__ == "__main__":
@@ -94,3 +123,4 @@ if __name__ == "__main__":
     interval = (27, stim.shape[1] / 100)
     m, d = 18, 20
     run(stim, resp)
+    # test("ours.keras")

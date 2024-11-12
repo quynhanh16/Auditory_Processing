@@ -75,9 +75,7 @@ def run():
 
     model = models.Sequential()
 
-    model.add(layers.Conv2D(70, (3, 3), activation="relu", input_shape=(21, 18, 1)))
-
-    model.add(layers.Conv2D(80, (3, 3), activation="relu"))
+    model.add(layers.Conv2D(10, (3, 3), activation="relu", input_shape=(21, 18, 1)))
 
     model.add(layers.MaxPool2D((3, 3)))
 
@@ -111,10 +109,10 @@ def run():
     plt.ylabel('R2 Score')
     plt.show()
 
-    model.save("model_average.keras")
+    model.save("population_model.keras")
 
 
 if __name__ == "__main__":
-    # run()
+    run()
     # test("model_average.keras")
-    graph("model_average.keras")
+    # graph("model_average.keras")
