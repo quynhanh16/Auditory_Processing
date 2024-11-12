@@ -14,8 +14,8 @@ import numpy as np
 from tools.signal import RasterizedSignal
 
 # Computing
-from computing import population_spike_rate, population_evoked_firing_rate
-from fitting import simple_linear_model
+from tools.computing import population_spike_rate, population_evoked_firing_rate
+from tools.fitting import simple_linear_model
 
 # Tools
 from tools.utils import (
@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
-    # stim_heatmap(stim, (27, 30))
+    stim_heatmap(stim, (27, 30))
     # population_spike_rate_plot(resp, (3, 6))
     # linear_model_plot(stim, resp, (1.5, 3.0))
     # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
