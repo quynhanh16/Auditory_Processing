@@ -130,6 +130,15 @@ def save_state(filename: str, data: Any) -> None:
         pickle.dump(data, f)
 
 
+def prepare_stimuli_model(stimuli: RasterizedSignal, m, d):
+    new_x = np.empty((stimuli.shape[0], d + 1, m))
+    for i in range(stimuli.shape[0]):
+        for j in range(int(stimuli.shape[1] / m)):
+            for k in range(int(stimuli.shape[1] / d + 1)):
+                new_x[i, j, k] = stimuli[i, (m * j) + k]
+    return new_x
+
+
 def load_state(filename: str) -> Any:
     """
     Load an object from a pickle file with name *filename*.
