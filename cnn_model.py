@@ -56,8 +56,15 @@ def run():
     y = load_state("y_model.pkl").T
     y = np.mean(y, axis=1)
     print(X.shape, y.shape)
+    print(np.mean(X), np.mean(y))
 
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    norm = tf.keras.layers.Normalization(axis=None)
+    norm.adapt(X)
+    X_train = norm(X_train)
+    return
+    X_val = norm(X_val)
+
     tf.random.set_seed(42)
     model = models.Sequential()
 
@@ -80,7 +87,7 @@ def run():
     model.compile(
         optimizer="adam", loss=tf.keras.losses.MeanSquaredError(),
         metrics=[
-            tf.keras.metrics.MeanAbsoluteError(),
+            tf.keras.metrics.MeanSquaredError(),
             tf.keras.metrics.R2Score(),
         ]
     )
@@ -98,10 +105,10 @@ def run():
     plt.legend()
     plt.show()
 
-    plt.plot(history.history['r2_score'])
-    plt.xlabel('Epoch')
-    plt.ylabel('R2 Score')
-    plt.show()
+    # plt.plot(history.history['r2_score'])
+    # plt.xlabel('Epoch')
+    # plt.ylabel('R2 Score')
+    # plt.show()
 
     model.save('final_model.keras')
 
@@ -123,6 +130,7 @@ def validate_test():
     print("R2 Score:", r2_score(y, predictions))
     plt.plot(y[600:1200])
     plt.plot(predictions[600:1200])
+    plt.title("Population Spiking Rate 2Dx3 (Normalized)")
     plt.show()
 
 
@@ -140,6 +148,6 @@ if __name__ == "__main__":
 
     interval = (27, stim.shape[1] / 100)
     m, d = 18, 20
-    # run()
-    validate_test()
+    run()
+    # validate_test()
     # test("ours.keras")

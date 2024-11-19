@@ -1,7 +1,6 @@
 # File: plotting.py
 # Purpose: Visual analysis of the recordings.
-
-
+import matplotlib.axes
 # Packages
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
@@ -135,8 +134,10 @@ def stim_heatmap(
     :return:
     """
     r = signal.extract_epoch(np.array([list(interval)]))
-    y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
-    y = [round(i, 2) for i in y]
+    # 2.3 to 4.3
+    # y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
+    # y = [round(i, 2) for i in y]
+    y = [i for i in range(1, 19)]
     r = r[0, :, :]
 
     if "ax" in kwargs.keys():
@@ -151,7 +152,7 @@ def stim_heatmap(
     ax.set_xticklabels(np.arange(interval[0], interval[1] + 0.5, 0.5), rotation=0)
     ax.set_xlabel("Time (s)")
     ax.set_yticks(np.arange(1, 19, 1), labels=y, rotation=0)
-    ax.set_ylabel("Sample (Hz)")
+    ax.set_ylabel("Channels")
 
     if display:
         plt.tight_layout()
@@ -163,7 +164,7 @@ def population_spike_rate_plot(
         interval: Tuple[float, float],
         display: bool = True,
         **kwargs,
-) -> None:
+) -> matplotlib.axes.Axes | None:
     """
     Plot the population spike rate of the response data of all cells during a given interval.
 
@@ -189,6 +190,8 @@ def population_spike_rate_plot(
     )
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Rate (Hz)")
+
+    return ax
 
     if display:
         plt.tight_layout()
@@ -315,8 +318,8 @@ if __name__ == "__main__":
 
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
-    stim_heatmap(stim, (27, 30))
-    # population_spike_rate_plot(resp, (3, 6))
+    # stim_heatmap(stim, (27, 30))
+    fig = population_spike_rate_plot(resp, (3, 6), False)
     # linear_model_plot(stim, resp, (1.5, 3.0))
     # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
     # coefficient_heatmap(joblib.load("nr_linear_model.pkl").coef_, 18, 20)

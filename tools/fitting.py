@@ -94,7 +94,7 @@ def simple_linear_model(
     # Fit model.
     model.fit(X, y)
     # Save model to a pkl file.
-    joblib.dump(model, "../nr_linear_model.pkl")
+    joblib.dump(model, "../models/nr_linear_model.pkl")
     coefficients = model.coef_
     intercepts = np.array([model.intercept_])
 

@@ -12,6 +12,7 @@ figures/
 *.tgz
 *.pkl
 *.txt
+*.keras
 
 
 FIX.md
