@@ -1,9 +1,10 @@
 # Packages
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, models
-import numpy as np
 
 # Tools
 from tools.utils import (
@@ -11,7 +12,7 @@ from tools.utils import (
     splitting_recording,
     save_state,
     prepare_response,
-    load_state, prepare_stimuli,
+    load_state, prepare_stimuli, prepare_stimuli_model,
 )
 
 
@@ -48,39 +49,31 @@ def test(model_path):
     plt.legend()
     plt.show()
 
+
 # I give up
-def run(stimuli, response):
-    print("Preparing x")
-    stim_state_file = f"x_model.pkl"
-    X = load_state(stim_state_file)
-
-    print(X.shape)
-    # X = reshape_stim(X)
-
-    print("Preparing y")
-    resp_state_file = f"resp_m{m}_t{interval}.pkl"
-    resp_state = load_state(resp_state_file)
-    if resp_state is None:
-        y = prepare_response(response, interval, d)
-        save_state(resp_state_file, y)
-    else:
-        y = load_state(resp_state_file)
-
+def run():
+    X = load_state("x_model.pkl")
+    y = load_state("y_model.pkl").T
+    y = np.mean(y, axis=1)
     print(X.shape, y.shape)
 
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     tf.random.set_seed(42)
     model = models.Sequential()
 
-    model.add(layers.Conv2D(70, (3, 3), activation="relu", input_shape=(21, 18, 1)))
+    model.add(layers.Conv2D(32, (3, 3), activation="relu", input_shape=(21, 18, 1)))
 
-    model.add(layers.Conv2D(80, (3, 3), activation="relu"))
+    model.add(layers.MaxPool2D((2, 2)))
 
-    model.add(layers.MaxPool2D((3, 3)))
+    model.add(layers.Conv2D(64, (3, 3), activation="relu"))
+
+    model.add(layers.MaxPool2D((2, 2)))
+
+    model.add(layers.Conv2D(64, (3, 3), activation="relu"))
 
     model.add(layers.Flatten())
 
-    model.add(layers.Dense(100, activation="relu"))
+    model.add(layers.Dense(64, activation="relu"))
 
     model.add(layers.Dense(1))
 
@@ -94,8 +87,8 @@ def run(stimuli, response):
 
     model.summary()
 
-    # history = model.fit(X_train, y_train.T, epochs=20, validation_data=(X_val, y_val.T))
-    model = tf.keras.models.load_model("ours2D-70-80.keras")
+    history = model.fit(X_train, y_train, epochs=20, validation_data=(X_val, y_val))
+    # model = tf.keras.models.load_model("ours2D-70-80.keras")
     pred = model.predict(X)
 
     plt.plot(y[900:1200], label="Actual")
@@ -105,7 +98,32 @@ def run(stimuli, response):
     plt.legend()
     plt.show()
 
-    model.save('ours2D-70-80.keras')
+    plt.plot(history.history['r2_score'])
+    plt.xlabel('Epoch')
+    plt.ylabel('R2 Score')
+    plt.show()
+
+    model.save('final_model.keras')
+
+
+def validate_test():
+    stim, resp = load_state("state.pkl")
+    model = tf.keras.models.load_model("final_model.keras")
+    model.summary()
+
+    X = prepare_stimuli(stim, (0, 27), 18, 20)
+    y = prepare_response(resp, (0, 27), 20).T
+    y = np.mean(y, axis=1)
+
+    print(X.shape, y.shape)
+
+    X = prepare_stimuli_model(X, 18, 20)
+    predictions = model.predict(X)
+    print("Mean Squared Error:", mean_squared_error(y, predictions))
+    print("R2 Score:", r2_score(y, predictions))
+    plt.plot(y[600:1200])
+    plt.plot(predictions[600:1200])
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -122,5 +140,6 @@ if __name__ == "__main__":
 
     interval = (27, stim.shape[1] / 100)
     m, d = 18, 20
-    run(stim, resp)
+    # run()
+    validate_test()
     # test("ours.keras")

@@ -70,13 +70,12 @@ def prepare_stimuli(
     stim_matrix = np.array([])
 
     for i in range(m):
-        print(f"Preparing channel: {i}")
+        # print(f"Preparing channel: {i}")
         matrix = np.empty((0, d + 1))
         for j in range(length_stim):
             if (j % 150) >= d:
                 data = stim_data[i][j - d: j + 1]
                 matrix = np.vstack((matrix, data))
-        print()
         if stim_matrix.size == 0:
             stim_matrix = matrix
         else:
@@ -130,11 +129,11 @@ def save_state(filename: str, data: Any) -> None:
         pickle.dump(data, f)
 
 
-def prepare_stimuli_model(stimuli: RasterizedSignal, m, d):
+def prepare_stimuli_model(stimuli, m: int, d: int):
     new_x = np.empty((stimuli.shape[0], d + 1, m))
     for i in range(stimuli.shape[0]):
         for j in range(int(stimuli.shape[1] / m)):
-            for k in range(int(stimuli.shape[1] / d + 1)):
+            for k in range(int(stimuli.shape[1] / (d + 1))):
                 new_x[i, j, k] = stimuli[i, (m * j) + k]
     return new_x
 
