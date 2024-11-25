@@ -1,21 +1,19 @@
 # File: plotting.py
 # Purpose: Visual analysis of the recordings.
+from typing import List, Tuple
+
 import matplotlib.axes
+import matplotlib.pyplot as plt
+import numpy as np
 # Packages
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
-from typing import List, Tuple
-import joblib
-import matplotlib.pyplot as plt
-import numpy as np
-
-# NEMS Packages
-from tools.signal import RasterizedSignal
 
 # Computing
 from tools.computing import population_spike_rate, population_evoked_firing_rate
 from tools.fitting import simple_linear_model
-
+# NEMS Packages
+from tools.signal import RasterizedSignal
 # Tools
 from tools.utils import (
     load_datafile,
@@ -318,8 +316,8 @@ if __name__ == "__main__":
 
     # resp_spike_rate_plot(resp, (0, 3.5), [all_cellids[i] for i in [0, 1]], hist=True)
     # resp_raster_plot(resp, (1.4, 3.8), all_cellids[0])
-    # stim_heatmap(stim, (27, 30))
-    fig = population_spike_rate_plot(resp, (3, 6), False)
+    stim_heatmap(stim, (9, 13.5))
+    # fig = population_spike_rate_plot(resp, (3, 6), False)
     # linear_model_plot(stim, resp, (1.5, 3.0))
     # actual_predicted_plot(stim, resp, (0, 27), joblib.load("nr_linear_model.pkl"))
     # coefficient_heatmap(joblib.load("nr_linear_model.pkl").coef_, 18, 20)
