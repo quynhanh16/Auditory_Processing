@@ -302,6 +302,30 @@ def coefficient_heatmap(coefficients: List[float], m: int, d: int) -> None:
     plt.show()
 
 
+def plot_predictions(
+        y_true,
+        y_pred,
+        interval: Tuple[float, float],
+) -> None:
+    """
+    Plot predicted and actual responses over an interval.
+
+    :param y_true: Actual values
+    :param y_pred: Predicted values
+    :param interval: Interval in seconds
+    :return: None
+    """
+    x = y_true[interval[0]: interval[1]]
+    y = y_pred[interval[0]: interval[1]]
+    plt.figure()
+    plt.plot(x, label="Actual")
+    plt.plot(y, label="Predicted")
+    plt.title("Actual vs. Predicted (Validation Data)")
+    plt.xlabel("Actual (Hz)")
+    plt.ylabel("Predicted (Hz)")
+    plt.show()
+
+
 if __name__ == "__main__":
     tgz_file: str = "../A1_NAT4_ozgf.fs100.ch18.tgz"
 

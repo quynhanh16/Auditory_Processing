@@ -11,6 +11,7 @@ from typing import List, Tuple, Dict, Any
 
 import h5py
 import numpy as np
+from tqdm import tqdm
 
 # NEMS Packages
 from tools import epoch
@@ -69,21 +70,38 @@ def prepare_stimuli(
     length_stim = stim_data.shape[1]
     stim_matrix = np.array([])
 
-    for i in range(m):
-        # print(f"Preparing channel: {i}")
-        matrix = np.empty((0, d + 1))
-        for j in range(length_stim):
-            if (j % 150) >= d:
-                data = stim_data[i][j - d: j + 1]
-                matrix = np.vstack((matrix, data))
-        if stim_matrix.size == 0:
-            stim_matrix = matrix
-        else:
-            stim_matrix = np.hstack((stim_matrix, matrix))
+    with tqdm(total=100, desc="Preparing Stimuli", leave=False) as pbar:
+        for i in range(m):
+            bar_increment = round(100 / m, 5)
+
+            if pbar.n + bar_increment < 100:
+                pbar.update(bar_increment)
+            else:
+                pbar.update(100 - pbar.n)
+
+            matrix = np.empty((0, d + 1))
+
+            with tqdm(total=100, desc=f"Preparing Stimuli Channel {i + 1}", leave=False) as chan_pbar:
+                for j in range(length_stim):
+                    bar_increment = round(100 / length_stim, 5)
+
+                    if chan_pbar.n + bar_increment < 100:
+                        chan_pbar.update(bar_increment)
+                    else:
+                        chan_pbar.update(100 - chan_pbar.n)
+
+                    if (j % 150) >= d:
+                        data = stim_data[i][j - d: j + 1]
+                        matrix = np.vstack((matrix, data))
+            if stim_matrix.size == 0:
+                stim_matrix = matrix
+            else:
+                stim_matrix = np.hstack((stim_matrix, matrix))
 
     return stim_matrix
 
 
+# TODO: Adding multiprocessing?
 def prepare_response(
         resp_signal: RasterizedSignal, interval: Tuple[float, float], d: int
 ) -> np.array:
@@ -101,17 +119,24 @@ def prepare_response(
     resp_data = resp_signal.extract_epoch(np.array([list(interval)]))[0]
     resp_matrix = np.array([])
 
-    for i in range(resp_data.shape[0]):
-        matrix = []
+    with tqdm(total=100, desc="Preparing Response", leave=False) as pbar:
+        for i in range(resp_data.shape[0]):
+            bar_increment = round(100 / resp_data.shape[0], 5)
+            if pbar.n + bar_increment < 100:
+                pbar.update(bar_increment)
+            else:
+                pbar.update(100 - pbar.n)
 
-        for idx, ele in enumerate(resp_data[i]):
-            if (idx % 150) >= d:
-                matrix.append(ele)
+            matrix = []
 
-        if resp_matrix.size == 0:
-            resp_matrix = np.array(matrix)
-        else:
-            resp_matrix = np.vstack((resp_matrix, matrix))
+            for idx, ele in enumerate(resp_data[i]):
+                if (idx % 150) >= d:
+                    matrix.append(ele)
+
+            if resp_matrix.size == 0:
+                resp_matrix = np.array(matrix)
+            else:
+                resp_matrix = np.vstack((resp_matrix, matrix))
 
     return resp_matrix
 
