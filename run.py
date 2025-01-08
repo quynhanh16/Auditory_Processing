@@ -10,21 +10,25 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
 
-from tools import load_state, load_datafile, splitting_recording, save_state, stim_heatmap, \
-    prepare_stimuli, prepare_stimuli_model, prepare_response
+from tools import load_state, load_datafile, splitting_recording, save_state, stim_heatmap, prepare_stimuli, \
+    prepare_stimuli_model, prepare_response, RasterizedSignal, population_spike_rate_plot
 
 # Global variables
 tf.random.set_seed(42)
 np.random.seed(42)
 random.seed(42)
+global y_mean, y_std
 
-observed_data = (12.0, 16.5)  # 3 Stimuli in the validation data
+# Validation data 0 - 27 seconds
+observed_data = (9, 13.5)  # 3 Stimuli in the validation data
 val_int = (0, 27)  # Validation data is given by the first 27 seconds of all recordings.
 m, d = 18, 20  # 18 Channels. 20 previous stimuli
 
 
-def preparing_data() -> None:
+def preparing_data() -> tuple[RasterizedSignal, RasterizedSignal]:
+    global y_mean, y_std
     # Loading files
     tgz_file: str = "./A1_NAT4_ozgf.fs100.ch18.tgz"
     recordings_file = "./data/recordings.pkl"
@@ -101,14 +105,11 @@ def preparing_data() -> None:
             raise RuntimeError(f"Error: An error occurred when trying to load and prepare the testing response.\n\t{e}")
 
     print("-> FINISHED: Preparing Data\n")
+    return stim, resp
 
 
-def general() -> None:
+def general(stimuli_data: np.ndarray, response_data: np.ndarray) -> None:
     # General
-    # TODO: General Statistics
-    recordings_data = "./data/recordings.pkl"
-    stimuli_data, response_data = load_state(recordings_data)
-
     stimuli_stats = {"channel": [], "mean": [], "std": []}  # Channel | Mean | Std
     for idx, channel in enumerate(stimuli_data):
         channel_mean = np.mean(channel)
@@ -327,21 +328,45 @@ def results() -> None:
     df = pd.DataFrame(model_results)
     df.to_csv("./results/model_results.csv")
 
+    print("-> FINISHED: Getting results of models\n")
+
 
 # TODO: Still need to work on graphing
-def graph_results() -> None:
+def graph_results(stimuli_data: RasterizedSignal, response_data: RasterizedSignal) -> None:
+    # Normalize response
+    model_resp_data = (np.mean(response_data._data, axis=0) - y_mean) / y_std
+
     # Stimuli heatmap
-    # stim_heatmap(stim, interval)
-    f, ax = plt.subplots(figsize=(10, 6))
-    stim_heatmap(stim, interval, False, ax=ax)
-    ax.set_xticks(np.arange(0, (interval[1] - interval[0]) * 100 + 1, 50))
-    ax.set_xticklabels(np.arange(interval[0] * 1000, interval[1] * 1000 + 500, 500, dtype=np.int32), rotation=0)
-    ax.set_xlabel("Time (ms)")
-    ax.set_title("Stimuli Heatmap")
-    f.show()
+    f, axs = plt.subplots(3, 1, figsize=(10, 8))
+    stim_heatmap(stimuli_data, observed_data, False, ax=axs[0])
 
     # Population spike rate plot
-    # population_spike_rate_plot(resp, interval)
+    population_spike_rate_plot(response_data, observed_data, False, ax=axs[1])
+    for i in range(3):
+        a = observed_data[0] + (1.50 * i) + .25
+        b = observed_data[0] + (1.50 * (i + 1)) - .25
+        axs[1].axvline(x=a, color="orange", ls="--", lw=2)
+        axs[1].axvline(x=b, color="red", ls="--", lw=2)
+
+    # Actual vs. Predicted: Linear
+    population_spike_rate_plot(response_data, observed_data, False, ax=axs[2])
+    model = load_state("./models/lr.pkl")
+    x = prepare_stimuli(stimuli_data, observed_data, m, d)
+    y = model.predict(x)
+    x = np.array([])
+    for i in range(3):
+        start = observed_data[0] + (1.50 * i) + 0.20
+        x = np.concatenate((x, (np.arange(0, 1.3, 0.01) + start)))
+    axs[2].plot(x, y)
+
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.ylabel("Firing Rate")
+    plt.xlabel("Time (ms)")
+    plt.tight_layout()
+    plt.show()
+
+    print("-> FINISHED: Plotting and saving results of models\n")
 
 
 def run() -> None:
@@ -358,10 +383,10 @@ def run() -> None:
     model_path.mkdir(parents=True, exist_ok=True)
 
     # Processing and Saving data
-    # preparing_data()
+    stim, resp = preparing_data()
 
     # General results
-    # general()
+    # general(stim._data, resp._data)
 
     # Lineal Model
     # ln_model()
@@ -371,7 +396,8 @@ def run() -> None:
     # cnn_2l()
 
     # Getting results
-    results()
+    # results()
+    graph_results(stim, resp)
 
 
 if __name__ == "__main__":

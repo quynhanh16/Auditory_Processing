@@ -7,6 +7,7 @@ import os
 import pickle
 import re
 from dataclasses import dataclass
+from multiprocessing import Pool
 from typing import List, Tuple, Dict, Any
 
 import h5py
@@ -43,21 +44,71 @@ class RecordingData:
 
 
 def save_results(filename: str, label: str, info: Any) -> None:
+    """
+    Save object as h5 file.
+
+    :param filename:
+    :param label:
+    :param info:
+    :return:
+    """
     with h5py.File(filename, "w") as f:
         f.create_dataset(label, data=info)
 
 
 def read_results(filename: str, label: str):
+    """
+    Read object from h5 file.
+
+    :param filename:
+    :param label:
+    :return: Any
+    """
     with h5py.File(filename, "r") as f:
         data = f[label][:]
         return data
+
+
+def prepare_stimulus(
+        idx, data, d
+) -> np.ndarray:
+    """
+    Given an array of numbers and d, ignore the first d elements of the array every 150
+    time points, and return sets of arrays of length d stacked vertically.
+
+    :param idx: Index of channel
+    :param data: Time data of channel
+    :param d: Previous stimuli
+    :return:
+    """
+    length_stim = data.shape[0]
+    matrix = np.empty((0, d + 1))
+
+    with tqdm(total=100, desc=f"Preparing Stimuli Channel {idx + 1}", leave=False) as chan_pbar:
+        for j in range(length_stim):
+            bar_increment = round(100 / length_stim, 5)
+
+            if chan_pbar.n + bar_increment < 100:
+                chan_pbar.update(bar_increment)
+            else:
+                chan_pbar.update(100 - chan_pbar.n)
+
+            if (j % 150) >= d:
+                matrix = np.vstack((matrix, data[j - d: j + 1]))
+
+    return matrix
 
 
 def prepare_stimuli(
         stim_signal: RasterizedSignal, interval: Tuple[float, float], m: int, d: int
 ) -> np.ndarray:
     """
-    Return a list with stimuli
+    Prepare the stimuli recording by ignoring the first d data points per interval.
+    In this case, the interval is 150, therefore, the function will return only
+    data points between 0.2 - 1.5 seconds of the recording.
+    Return a matrix of prepared stimuli. The shape of the matrix is the number of
+    datatime points minus the first d elements every 150 data points by d + 1 elements
+    times the number of channels (m).
 
     :param stim_signal: Stimulation signal
     :param interval: Time interval
@@ -66,37 +117,11 @@ def prepare_stimuli(
     :return: np.ndarray
     """
     stim_data = stim_signal.extract_epoch(np.array([list(interval)]))[0, :m]
+    stim_data = [(idx, arr, d) for idx, arr in enumerate(stim_data)]
 
-    length_stim = stim_data.shape[1]
-    stim_matrix = np.array([])
-
-    with tqdm(total=100, desc="Preparing Stimuli", leave=False) as pbar:
-        for i in range(m):
-            bar_increment = round(100 / m, 5)
-
-            if pbar.n + bar_increment < 100:
-                pbar.update(bar_increment)
-            else:
-                pbar.update(100 - pbar.n)
-
-            matrix = np.empty((0, d + 1))
-
-            with tqdm(total=100, desc=f"Preparing Stimuli Channel {i + 1}", leave=False) as chan_pbar:
-                for j in range(length_stim):
-                    bar_increment = round(100 / length_stim, 5)
-
-                    if chan_pbar.n + bar_increment < 100:
-                        chan_pbar.update(bar_increment)
-                    else:
-                        chan_pbar.update(100 - chan_pbar.n)
-
-                    if (j % 150) >= d:
-                        data = stim_data[i][j - d: j + 1]
-                        matrix = np.vstack((matrix, data))
-            if stim_matrix.size == 0:
-                stim_matrix = matrix
-            else:
-                stim_matrix = np.hstack((stim_matrix, matrix))
+    with Pool() as pool:
+        stim_matrix = pool.starmap(prepare_stimulus, stim_data)
+        stim_matrix = np.hstack(stim_matrix)
 
     return stim_matrix
 

@@ -2,7 +2,6 @@
 # Purpose: Visual analysis of the recordings.
 from typing import List, Tuple
 
-import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 # Packages
@@ -131,25 +130,22 @@ def stim_heatmap(
     :param kwargs:
     :return:
     """
-    r = signal.extract_epoch(np.array([list(interval)]))
-    # 2.3 to 4.3
-    # y = np.linspace(np.log10(200), np.log10(20000), 18, endpoint=True)
-    # y = [round(i, 2) for i in y]
+    r = signal.extract_epoch(np.array([list(interval)]))[0, :]
     y = [i for i in range(1, 19)]
-    r = r[0, :, :]
 
     if "ax" in kwargs.keys():
         ax = kwargs["ax"]
     else:
         f, ax = plt.subplots(figsize=(10, 6))
 
-    sns.heatmap(r, cmap="viridis", fmt="d", ax=ax)
+    # Note: The color bar just makes it ugly.
+    sns.heatmap(r, cmap="viridis", fmt="d", cbar=False, ax=ax)
     ax.invert_yaxis()
     ax.set_title(f"Stimulation Heatmap")
-    ax.set_xticks(np.arange(0, (interval[1] - interval[0]) * 100 + 1, 50))
-    ax.set_xticklabels(np.arange(interval[0], interval[1] + 0.5, 0.5), rotation=0)
-    ax.set_xlabel("Time (s)")
-    ax.set_yticks(np.arange(1, 19, 1), labels=y, rotation=0)
+    ax.set_xticks(np.arange(0, r.shape[1] + 1, 50))
+    ax.set_xticklabels(np.arange(interval[0] * 1000, interval[1] * 1000 + 500, 500, dtype=np.int32), rotation=0)
+    ax.set_xlabel("Time (ms)")
+    ax.set_yticks(y, labels=y, rotation=0)
     ax.set_ylabel("Channels")
 
     if display:
@@ -162,7 +158,7 @@ def population_spike_rate_plot(
         interval: Tuple[float, float],
         display: bool = True,
         **kwargs,
-) -> matplotlib.axes.Axes | None:
+) -> None:
     """
     Plot the population spike rate of the response data of all cells during a given interval.
 
@@ -172,7 +168,7 @@ def population_spike_rate_plot(
     :param kwargs:
     :return: None
     """
-    y = population_spike_rate(resp_signal, interval) * 100
+    y = population_spike_rate(resp_signal, interval)
     x = np.arange(interval[0], interval[1], 0.01)
 
     if "ax" in kwargs.keys():
@@ -182,14 +178,10 @@ def population_spike_rate_plot(
 
     ax.plot(x, y, label="Actual")
     ax.set_title(f"Population Spike Rate")
-    ax.set_xticks(
-        np.arange(interval[0], interval[1] + 0.5, 0.5),
-        labels=np.arange(interval[0], interval[1] + 0.5, 0.5),
-    )
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Rate (Hz)")
-
-    return ax
+    ax.set_xticks(np.arange(interval[0], interval[1] + 0.5, 0.5))
+    ax.set_xticklabels(np.arange(interval[0] * 1000, interval[1] * 1000 + 500, 500, dtype=np.int32))
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Firing Rate")
 
     if display:
         plt.tight_layout()

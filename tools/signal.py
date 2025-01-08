@@ -1,17 +1,16 @@
-import io
-import io
-import os
-import logging
-import json
-import re
-import math
 import copy
+import io
+import json
+import logging
+import math
+import os
+import re
 import tempfile
 import warnings
 
-import pandas as pd
-import numpy as np
 import h5py
+import numpy as np
+import pandas as pd
 from scipy.sparse import csr_array
 
 from tools.epoch import (
@@ -153,21 +152,21 @@ class LabelSignalIndexer(BaseSignalIndexer):
 class SignalBase:
 
     def __init__(
-        self,
-        fs,
-        data,
-        name,
-        recording,
-        chans=None,
-        epochs=None,
-        segments=None,
-        meta=None,
-        safety_checks=True,
-        normalization="none",
-        dtype=None,
-        norm_baseline=np.array([[0]]),
-        norm_gain=np.array([[1]]),
-        **other_attributes,
+            self,
+            fs,
+            data,
+            name,
+            recording,
+            chans=None,
+            epochs=None,
+            segments=None,
+            meta=None,
+            safety_checks=True,
+            normalization="none",
+            dtype=None,
+            norm_baseline=np.array([[0]]),
+            norm_gain=np.array([[1]]),
+            **other_attributes,
     ):
         """
         Parameters
@@ -344,12 +343,12 @@ class SignalBase:
         return copy.copy(self)
 
     def get_epoch_bounds(
-        self,
-        epoch,
-        boundary_mode="exclude",
-        fix_overlap=None,
-        overlapping_epoch=None,
-        mask=None,
+            self,
+            epoch,
+            boundary_mode="exclude",
+            fix_overlap=None,
+            overlapping_epoch=None,
+            mask=None,
     ):
         """
         Get boundaries of named epoch.
@@ -450,13 +449,13 @@ class SignalBase:
         return bounds
 
     def get_epoch_indices(
-        self,
-        epoch,
-        boundary_mode="exclude",
-        fix_overlap=None,
-        overlapping_epoch=None,
-        mask=None,
-        allow_incomplete=False,
+            self,
+            epoch,
+            boundary_mode="exclude",
+            fix_overlap=None,
+            overlapping_epoch=None,
+            mask=None,
+            allow_incomplete=False,
     ):
         """
         Get boundaries of named epoch as index.
@@ -748,7 +747,7 @@ class SignalBase:
         return np.nanmean(epoch_data, axis=0)
 
     def extract_epochs(
-        self, epoch_names, overlapping_epoch=None, mask=None, allow_incomplete=False
+            self, epoch_names, overlapping_epoch=None, mask=None, allow_incomplete=False
     ):
         """
         Returns a dictionary of the data matching each element in epoch_names.
@@ -860,14 +859,14 @@ class SignalBase:
         return mask
 
     def epoch_to_signal(
-        self,
-        epoch="epoch",
-        indices=None,
-        boundary_mode="exclude",
-        fix_overlap=None,
-        onsets_only=False,
-        shift=0,
-        point_process=False,
+            self,
+            epoch="epoch",
+            indices=None,
+            boundary_mode="exclude",
+            fix_overlap=None,
+            onsets_only=False,
+            shift=0,
+            point_process=False,
     ):
         """
         Convert an epoch to a RasterizedSignal using the same sampling rate
@@ -1083,13 +1082,13 @@ class SignalBase:
         ax.set_title(self.name)
 
     def plot_epoch_avg(
-        self,
-        epoch="TRIAL",
-        channel=None,
-        norm=False,
-        ax=None,
-        prestimsilence=0,
-        **plotopts,
+            self,
+            epoch="TRIAL",
+            channel=None,
+            norm=False,
+            ax=None,
+            prestimsilence=0,
+            **plotopts,
     ):
         import matplotlib.pyplot as plt
 
@@ -1141,20 +1140,20 @@ class SignalBase:
 class RasterizedSignal(SignalBase):
 
     def __init__(
-        self,
-        fs,
-        data,
-        name,
-        recording,
-        chans=None,
-        epochs=None,
-        segments=None,
-        meta=None,
-        safety_checks=True,
-        normalization="none",
-        sparse=False,
-        dtype=None,
-        **other_attributes,
+            self,
+            fs,
+            data,
+            name,
+            recording,
+            chans=None,
+            epochs=None,
+            segments=None,
+            meta=None,
+            safety_checks=True,
+            normalization="none",
+            sparse=False,
+            dtype=None,
+            **other_attributes,
     ):
         """
         Parameters
@@ -1220,15 +1219,15 @@ class RasterizedSignal(SignalBase):
 
     @classmethod
     def from_3darray(
-        cls,
-        fs,
-        array,
-        name,
-        recording,
-        epoch_name="TRIAL",
-        chans=None,
-        meta=None,
-        safety_cheks=True,
+            cls,
+            fs,
+            array,
+            name,
+            recording,
+            epoch_name="TRIAL",
+            chans=None,
+            meta=None,
+            safety_cheks=True,
     ):
         """Initialize RasterizedSignal from 3d array
 
@@ -1389,15 +1388,15 @@ class RasterizedSignal(SignalBase):
         return RasterizedSignal(data=data, safety_checks=False, **attributes)
 
     def extract_epoch(
-        self,
-        epoch,
-        boundary_mode="exclude",
-        fix_overlap="first",
-        allow_empty=False,
-        trunc_at_min=False,
-        overlapping_epoch=None,
-        mask=None,
-        allow_incomplete=False,
+            self,
+            epoch,
+            boundary_mode="exclude",
+            fix_overlap="first",
+            allow_empty=False,
+            trunc_at_min=False,
+            overlapping_epoch=None,
+            mask=None,
+            allow_incomplete=False,
     ):
         """
         Extracts all occurances of epoch from the signal.
@@ -1583,9 +1582,9 @@ class RasterizedSignal(SignalBase):
         # TODO: this is a workaround/hack until a less expensive
         #       method for calculating these is available.
         if not (
-            hasattr(self, "channel_max")
-            and hasattr(self, "channel_std")
-            and hasattr(self, "channel_max")
+                hasattr(self, "channel_max")
+                and hasattr(self, "channel_std")
+                and hasattr(self, "channel_max")
         ):
             self._set_cached_props()
         m = self._data
@@ -1628,7 +1627,7 @@ class RasterizedSignal(SignalBase):
         return (est, val)
 
     def jackknife_by_epoch(
-        self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
+            self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
     ):
         """
         Returns a new signal, with epochs matching epoch_name NaN'd out.
@@ -1930,7 +1929,7 @@ class RasterizedSignal(SignalBase):
         return self._modified_copy(data)
 
     def replace_epochs(
-        self, epoch_dict, preserve_nan=True, zero_outside=False, mask=None
+            self, epoch_dict, preserve_nan=True, zero_outside=False, mask=None
     ):
         """
         Returns a new signal, created by replacing every occurrence of epochs
@@ -2326,18 +2325,18 @@ class PointProcess(SignalBase):
     #        return self._cached_data
 
     def __init__(
-        self,
-        fs,
-        data,
-        name,
-        recording,
-        chans=None,
-        epochs=None,
-        segments=None,
-        meta=None,
-        safety_checks=True,
-        normalization="none",
-        **other_attributes,
+            self,
+            fs,
+            data,
+            name,
+            recording,
+            chans=None,
+            epochs=None,
+            segments=None,
+            meta=None,
+            safety_checks=True,
+            normalization="none",
+            **other_attributes,
     ):
         """
         Parameters
@@ -2509,7 +2508,7 @@ class PointProcess(SignalBase):
         return (est, val)
 
     def jackknife_by_epoch(
-        self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
+            self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
     ):
         """
         convert to rasterized signal and create jackknife sets as
@@ -2636,14 +2635,14 @@ class PointProcess(SignalBase):
         return self._modified_copy(s, chans=chans, name=name)
 
     def extract_epoch(
-        self,
-        epoch,
-        boundary_mode="exclude",
-        fix_overlap="first",
-        allow_empty=False,
-        overlapping_epoch=None,
-        mask=None,
-        allow_incomplete=False,
+            self,
+            epoch,
+            boundary_mode="exclude",
+            fix_overlap="first",
+            allow_empty=False,
+            overlapping_epoch=None,
+            mask=None,
+            allow_incomplete=False,
     ):
         """
         Extracts all occurances of epoch from the signal.
@@ -2720,18 +2719,18 @@ class TiledSignal(SignalBase):
     """
 
     def __init__(
-        self,
-        fs,
-        data,
-        name,
-        recording,
-        chans=None,
-        epochs=None,
-        segments=None,
-        meta=None,
-        safety_checks=True,
-        normalization="none",
-        **other_attributes,
+            self,
+            fs,
+            data,
+            name,
+            recording,
+            chans=None,
+            epochs=None,
+            segments=None,
+            meta=None,
+            safety_checks=True,
+            normalization="none",
+            **other_attributes,
     ):
         """
         Parameters
@@ -2890,7 +2889,7 @@ class TiledSignal(SignalBase):
         return (est, val)
 
     def jackknife_by_epoch(
-        self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
+            self, njacks, jack_idx, epoch_name, tiled=True, invert=False, excise=False
     ):
         """
         convert to rasterized signal and create jackknife sets as
@@ -3254,7 +3253,6 @@ def merge_selections(signals):
     else:
         for a in arys:
             if not np.array_equal(a[np.isfinite(a)], the_mean[np.isfinite(a)]):
-
                 raise ValueError(
                     "Overlapping, unequal non-NaN values"
                     "found in signal {}.".format(signals[0].name)
@@ -3379,7 +3377,6 @@ def _merge_epochs(signals):
 
 
 def _normalize_data(data, normalization="minmax", d=None, g=None, sig=None, mask=None):
-
     if (d is not None) and (g is not None):
         data_out = (data - d) / g
 
