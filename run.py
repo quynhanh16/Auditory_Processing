@@ -49,6 +49,8 @@ def preparing_data() -> tuple[RasterizedSignal, RasterizedSignal]:
         except Exception as e:
             raise RuntimeError(f"Error: An error occurred when trying to load/save {recordings_file}.\n\t{e}")
 
+        y_mean = np.mean(resp._data)
+        y_std = np.std(resp._data)
         train_int = (27, stim.shape[1] / 100)
 
         # File names
@@ -74,13 +76,11 @@ def preparing_data() -> tuple[RasterizedSignal, RasterizedSignal]:
                 response = np.mean(response, axis=0)
                 main_pbar.update(5)
                 # Normalizing the response
-                y_mean, y_std = np.mean(response), np.std(response)
                 response = (response - y_mean) / y_std
                 main_pbar.update(5)
                 save_state(train_resp_file, response)
                 main_pbar.update(5)
             else:
-                y_mean, y_std = np.mean(train_resp), np.std(train_resp)
                 main_pbar.update(20)
         except Exception as e:
             raise RuntimeError(
@@ -145,11 +145,7 @@ def ln_model() -> None:
     stim_data = load_state("./data/train_stimuli.pkl")
     resp_data = load_state("./data/train_response.pkl")
 
-    # Validation data
-    stim_val = load_state("./data/val_stimuli.pkl")
-    resp_val = load_state("./data/val_response.pkl")
-
-    if stim_data is None or resp_data is None or stim_val is None or resp_val is None:
+    if stim_data is None or resp_data is None:
         raise FileNotFoundError("ERROR: Data not loaded correctly. Try running preparing_data() first")
 
     # Here you can change the architecture of the model.
@@ -299,6 +295,10 @@ def results() -> None:
     mse = mean_squared_error(y_val, val_predictions)
     val_mses.append(mse)
 
+    model_results = pd.DataFrame(
+        {"actual": np.hstack((y_train, y_val)), "predicted": np.hstack((predictions, val_predictions))})
+    model_results.to_csv("./results/ln_model_pred.csv")
+
     # CNN
     predictions = cnn1.predict(x_train)
     r2 = r2_score(y_train, predictions)
@@ -311,6 +311,11 @@ def results() -> None:
     mse = mean_squared_error(y_val, val_predictions)
     val_mses.append(mse)
 
+    model_results = pd.DataFrame(
+        {"actual": np.hstack((y_train, y_val)),
+         "predicted": np.hstack((predictions.flatten(), val_predictions.flatten()))})
+    model_results.to_csv("./results/2Dx1_pred.csv")
+
     predictions = cnn2.predict(x_train)
     r2 = r2_score(y_train, predictions)
     r2s.append(r2)
@@ -321,6 +326,11 @@ def results() -> None:
     val_r2s.append(r2)
     mse = mean_squared_error(y_val, val_predictions)
     val_mses.append(mse)
+
+    model_results = pd.DataFrame(
+        {"actual": np.hstack((y_train, y_val)),
+         "predicted": np.hstack((predictions.flatten(), val_predictions.flatten()))})
+    model_results.to_csv("./results/2Dx2_pred.csv")
 
     model_results = {"model": ["Linear", "CNN-1D", "CNN-2D"], "r2": r2s, "mse": mses, "val_r2": val_r2s,
                      "val_mse": val_mses}
@@ -334,10 +344,12 @@ def results() -> None:
 # TODO: Still need to work on graphing
 def graph_results(stimuli_data: RasterizedSignal, response_data: RasterizedSignal) -> None:
     # Normalize response
-    model_resp_data = (np.mean(response_data._data, axis=0) - y_mean) / y_std
+    y_data = np.mean(response_data._data, axis=0)
+    y_data = (y_data - y_mean) / y_std
 
+    # Linear Model
     # Stimuli heatmap
-    f, axs = plt.subplots(3, 1, figsize=(10, 8))
+    f, axs = plt.subplots(4, 1, figsize=(10, 8))
     stim_heatmap(stimuli_data, observed_data, False, ax=axs[0])
 
     # Population spike rate plot
@@ -349,21 +361,109 @@ def graph_results(stimuli_data: RasterizedSignal, response_data: RasterizedSigna
         axs[1].axvline(x=b, color="red", ls="--", lw=2)
 
     # Actual vs. Predicted: Linear
-    population_spike_rate_plot(response_data, observed_data, False, ax=axs[2])
+    axs[2].plot(y_data[900: 1350], label="Actual")
     model = load_state("./models/lr.pkl")
     x = prepare_stimuli(stimuli_data, observed_data, m, d)
     y = model.predict(x)
-    x = np.array([])
     for i in range(3):
-        start = observed_data[0] + (1.50 * i) + 0.20
-        x = np.concatenate((x, (np.arange(0, 1.3, 0.01) + start)))
-    axs[2].plot(x, y)
+        start = 150 * i
+        x = np.arange(0, 130, 1) + start + 20
+        axs[2].plot(x, y[(i * 130): ((i + 1) * 130)], label="Predicted", color="red", alpha=0.7)
+    axs[2].legend(loc="upper left")
 
+    # Actual vs. Predicted
+    df = pd.read_csv("./results/ln_model_pred.csv")
+    y_actual, y_pred = df["actual"].to_numpy().reshape((-1, 1)), df["predicted"].to_numpy().reshape((-1, 1))
+    reg = LinearRegression().fit(y_pred, y_actual)
+    reg = reg.predict(y_pred)
+    axs[3].scatter(y_actual, y_pred, s=2)
+    axs[3].plot(y_pred, reg, color="red")
+
+    plt.suptitle("Linear Model Results")
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
-    plt.ylabel("Firing Rate")
-    plt.xlabel("Time (ms)")
     plt.tight_layout()
+    plt.savefig("./results/linear_results.png")
+    plt.show()
+
+    # CNN 1 Model
+    # Stimuli heatmap
+    f, axs = plt.subplots(4, 1, figsize=(10, 8))
+    stim_heatmap(stimuli_data, observed_data, False, ax=axs[0])
+
+    # Population spike rate plot
+    population_spike_rate_plot(response_data, observed_data, False, ax=axs[1])
+    for i in range(3):
+        a = observed_data[0] + (1.50 * i) + .25
+        b = observed_data[0] + (1.50 * (i + 1)) - .25
+        axs[1].axvline(x=a, color="orange", ls="--", lw=2)
+        axs[1].axvline(x=b, color="red", ls="--", lw=2)
+
+    # Actual vs. Predicted: Linear
+    axs[2].plot(y_data[900: 1350], label="Actual")
+    model = tf.keras.models.load_model("./models/2Dx1.keras")
+    x = prepare_stimuli(stimuli_data, observed_data, m, d)
+    x = prepare_stimuli_model(x, m, d)
+    y = model.predict(x)
+    for i in range(3):
+        start = 150 * i
+        x = np.arange(0, 130, 1) + start + 20
+        axs[2].plot(x, y[(i * 130): ((i + 1) * 130)], label="Predicted", color="red", alpha=0.7)
+    axs[2].legend(loc="upper left")
+
+    # Actual vs. Predicted
+    df = pd.read_csv("./results/2Dx1_pred.csv")
+    y_actual, y_pred = df["actual"].to_numpy().reshape((-1, 1)), df["predicted"].to_numpy().reshape((-1, 1))
+    reg = LinearRegression().fit(y_pred, y_actual)
+    reg = reg.predict(y_pred)
+    axs[3].scatter(y_actual, y_pred, s=2)
+    axs[3].plot(y_pred, reg, color="red")
+
+    plt.suptitle("CNN 2Dx1 Results")
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./results/2Dx1_results.png")
+    plt.show()
+
+    # CNN 2 Model
+    # Stimuli heatmap
+    f, axs = plt.subplots(4, 1, figsize=(10, 8))
+    stim_heatmap(stimuli_data, observed_data, False, ax=axs[0])
+
+    # Population spike rate plot
+    population_spike_rate_plot(response_data, observed_data, False, ax=axs[1])
+    for i in range(3):
+        a = observed_data[0] + (1.50 * i) + .25
+        b = observed_data[0] + (1.50 * (i + 1)) - .25
+        axs[1].axvline(x=a, color="orange", ls="--", lw=2)
+        axs[1].axvline(x=b, color="red", ls="--", lw=2)
+
+    # Actual vs. Predicted: Linear
+    axs[2].plot(y_data[900: 1350], label="Actual")
+    model = tf.keras.models.load_model("./models/2Dx2.keras")
+    x = prepare_stimuli(stimuli_data, observed_data, m, d)
+    x = prepare_stimuli_model(x, m, d)
+    y = model.predict(x)
+    for i in range(3):
+        start = 150 * i
+        x = np.arange(0, 130, 1) + start + 20
+        axs[2].plot(x, y[(i * 130): ((i + 1) * 130)], label="Predicted", color="red", alpha=0.7)
+    axs[2].legend(loc="upper left")
+
+    # Actual vs. Predicted
+    df = pd.read_csv("./results/2Dx2_pred.csv")
+    y_actual, y_pred = df["actual"].to_numpy().reshape((-1, 1)), df["predicted"].to_numpy().reshape((-1, 1))
+    reg = LinearRegression().fit(y_pred, y_actual)
+    reg = reg.predict(y_pred)
+    axs[3].scatter(y_actual, y_pred, s=2)
+    axs[3].plot(y_pred, reg, color="red")
+
+    plt.suptitle("CNN 2Dx2 Results")
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./results/2Dx2_results.png")
     plt.show()
 
     print("-> FINISHED: Plotting and saving results of models\n")
