@@ -30,7 +30,7 @@ m, d = 18, 20  # 18 Channels. 20 previous stimuli
 def preparing_data() -> tuple[RasterizedSignal, RasterizedSignal]:
     global y_mean, y_std
     # Loading files
-    tgz_file: str = "./A1_NAT4_ozgf.fs100.ch18.tgz"
+    tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
     recordings_file = "./data/recordings.pkl"
 
     with tqdm(total=100, desc="Loading Data") as main_pbar:
@@ -475,7 +475,7 @@ def run() -> None:
     main_path.mkdir(parents=True, exist_ok=True)
 
     # Creating data folder
-    data_path = Path("./data")
+    data_path = Path("../[02] Pure Tone/data")
     data_path.mkdir(parents=True, exist_ok=True)
 
     # Creating model folder
@@ -486,17 +486,17 @@ def run() -> None:
     stim, resp = preparing_data()
 
     # General results
-    # general(stim._data, resp._data)
+    general(stim._data, resp._data)
 
     # Lineal Model
-    # ln_model()
+    ln_model()
 
     # CNN model
-    # cnn_1l()
-    # cnn_2l()
+    cnn_1l()
+    cnn_2l()
 
     # Getting results
-    # results()
+    results()
     graph_results(stim, resp)
 
 

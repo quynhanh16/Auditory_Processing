@@ -8,19 +8,15 @@ import tarfile
 import tempfile
 import time
 import warnings
-from pathlib import Path, PosixPath, WindowsPath
+from pathlib import PosixPath, WindowsPath
 
 import numpy as np
 import pandas as pd
 import requests
 
-import tools.epoch as ep
-
 from tools.signal import (
     SignalBase,
     RasterizedSignal,
-    PointProcess,
-    merge_selections,
     list_signals,
     load_signal,
     load_signal_from_streams,

@@ -211,7 +211,7 @@ def non_linear(model, s, r):
 if __name__ == "__main__":
     tgz_file: str = "../A1_NAT4_ozgf.fs100.ch18.tgz"
 
-    state_file = "../state.pkl"
+    state_file = "../../state.pkl"
     state = load_state(state_file)
     if state is None:
         rec = load_datafile(tgz_file, True)
