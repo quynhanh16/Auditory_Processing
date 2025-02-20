@@ -13,6 +13,10 @@ figures/
 *.pkl
 *.txt
 *.keras
+*.h5
+*.mat
+*.wav
 
+.DS_Store
 
 FIX.md
