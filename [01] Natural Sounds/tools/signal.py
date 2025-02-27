@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_array
 
-from tools.epoch import (
+from .epoch import (
     remove_overlap,
     merge_epoch,
     epoch_contained,

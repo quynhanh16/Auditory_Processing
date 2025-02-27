@@ -15,9 +15,9 @@ import numpy as np
 from tqdm import tqdm
 
 # NEMS Packages
-from tools import epoch
-from tools.recording import load_recording, Recording
-from tools.signal import RasterizedSignal, SignalBase
+import epoch
+from .recording import load_recording, Recording
+from .signal import RasterizedSignal, SignalBase
 
 
 # TODO: Add function that gives a summary about a Signal (RasterizedSignal? Recording?)

@@ -9,12 +9,12 @@ import seaborn as sns
 from matplotlib.gridspec import GridSpec
 
 # Computing
-from tools.computing import population_spike_rate, population_evoked_firing_rate
-from tools.fitting import simple_linear_model
+from .computing import population_spike_rate, population_evoked_firing_rate
+from .fitting import simple_linear_model
 # NEMS Packages
-from tools.signal import RasterizedSignal
+from .signal import RasterizedSignal
 # Tools
-from tools.utils import (
+from .utils import (
     load_datafile,
     splitting_recording,
     time_to_stimuli,

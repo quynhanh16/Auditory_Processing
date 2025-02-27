@@ -1,4 +1,4 @@
-# Auditory_Processing
+# Natural Sounds
 
 ## Introduction
 

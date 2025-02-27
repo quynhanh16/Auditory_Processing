@@ -3,20 +3,19 @@
 
 # Packages
 from typing import Any
+
 import joblib
 import numpy as np
+from scipy.optimize import least_squares
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# NEMS Packages
-from tools.signal import RasterizedSignal
-from scipy.optimize import least_squares
-
 # Computing
-from tools.computing import population_spike_rate
-
+from .computing import population_spike_rate
+# NEMS Packages
+from .signal import RasterizedSignal
 # Tools
-from tools.utils import (
+from .utils import (
     load_state,
     save_state,
     load_datafile,

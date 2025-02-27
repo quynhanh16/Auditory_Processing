@@ -14,14 +14,14 @@ import numpy as np
 import pandas as pd
 import requests
 
-from tools.signal import (
+from .signal import (
     SignalBase,
     RasterizedSignal,
     list_signals,
     load_signal,
     load_signal_from_streams,
 )
-from tools.uri import local_uri, http_uri, targz_uri, NumpyEncoder, json_numpy_obj_hook
+from .uri import local_uri, http_uri, targz_uri, NumpyEncoder, json_numpy_obj_hook
 
 log = logging.getLogger(__name__)
 

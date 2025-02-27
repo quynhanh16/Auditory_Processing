@@ -5,10 +5,9 @@ from typing import Tuple
 import numpy as np
 
 # NEMS Packages
-from tools.signal import RasterizedSignal
-
+from .signal import RasterizedSignal
 # Tools
-from tools.utils import load_state, save_state, load_datafile, splitting_recording
+from .utils import load_state, save_state, load_datafile, splitting_recording
 
 
 def unit_mean_baseline_activity(unit) -> float:
