@@ -45,6 +45,25 @@ def get_response_data_by_trigger(file_path: str, n_trigger: int, trigger_length:
     return response_signals[trigger: trigger + trigger_length].T[0]
 
 
+def get_response_data_by_trigger_spikes(file_path: str, n_trigger: int, trigger_length: int = 3000) -> np.ndarray:
+    """
+    Given a path to a .mat file, return the nth trigger of specified length.
+    For this dataset, the trigger length is set to 3000.
+
+    :param file_path:
+    :param n_trigger:
+    :param trigger_length:
+    :return: np.ndarray
+    """
+    file = loadmat(file_path)
+    response_signals = file['binarySpike']
+    triggers = file['trigger'][0]
+
+    trigger = triggers[n_trigger - 1]
+
+    return response_signals[trigger: trigger + trigger_length].T[0]
+
+
 def load_state(filename: str) -> Any:
     """
     Load an object from a pickle file with name *filename*.
