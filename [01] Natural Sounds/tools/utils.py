@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 
 # NEMS Packages
-import epoch
+from .epoch import epoch_names_matching
 from .recording import load_recording, Recording
 from .signal import RasterizedSignal, SignalBase
 
@@ -344,7 +344,7 @@ def time_to_stimuli(
         raise ValueError("Start Index out of range")
 
     index: (int, int) = math.floor(interval[0] / 1.5), math.floor(interval[1] / 1.5)
-    val_epochs = epoch.epoch_names_matching(signal.epochs, "^STIM_00")
+    val_epochs = epoch_names_matching(signal.epochs, "^STIM_00")
 
     if index[1] == len(val_epochs):
         return val_epochs[index[0]:], index
@@ -370,7 +370,7 @@ def single_site_similar_stim(site: str, top_n: int = 0) -> None:
     resp = recording["resp"]
     stim = {}
 
-    val_epochs = epoch.epoch_names_matching(resp.epochs, "^STIM_00")
+    val_epochs = epoch_names_matching(resp.epochs, "^STIM_00")
     for val in val_epochs:
         match = re.search(pattern, val)
         if match:
@@ -411,7 +411,7 @@ def multiple_site_similar_stim(sites: List[str], top_n: int) -> None:
         recording = load_datafile(path)
         resp = recording["resp"].rasterize()
 
-        val_epochs = epoch.epoch_names_matching(resp.epochs, "^STIM_00")
+        val_epochs = epoch_names_matching(resp.epochs, "^STIM_00")
         for val in val_epochs:
             match = re.search(pattern, val)
             if match:

@@ -475,7 +475,7 @@ def run() -> None:
     main_path.mkdir(parents=True, exist_ok=True)
 
     # Creating data folder
-    data_path = Path("../[02] Pure Tone/data")
+    data_path = Path("./data")
     data_path.mkdir(parents=True, exist_ok=True)
 
     # Creating model folder
