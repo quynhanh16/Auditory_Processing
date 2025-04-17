@@ -3,7 +3,67 @@ from typing import Any
 
 import h5py
 import numpy as np
+import os
 from scipy.io import loadmat
+
+
+def load_data():
+    # TODO: Still need to implement details
+    path = "./data/pure_tones"
+    stim_file = "./data/Stimulus/PureToneParameters.mat"
+    stim = loadmat(stim_file)
+    order = [(freq, amp) for _, _, freq, amp in stim["stimulus_presentation_order"]]
+    final = {}
+
+    # New: Neuron_file -> Frequency -> Amps -> data
+    for neuron in os.listdir(path):
+        final[neuron] = {}
+        files = os.path.join(path, neuron)
+        file = os.path.join(files, os.listdir(files)[0])
+        mat_file = loadmat(file)
+        triggers = mat_file["trigger"][0]
+        response = mat_file["response_signal"].T[0]
+
+        for idx, (freq, amp) in enumerate(order):
+            if freq not in final[neuron]:
+                final[neuron][freq] = {}
+            data = response[triggers[idx]: triggers[idx] + 3000].tolist()
+
+            final[neuron][freq][amp] = data
+
+    return final
+
+
+def load_data_by_neuron(spike = 10):
+    """
+    Load spikes by neuron
+
+    :return:
+    """
+    path = "./data/pure_tones_spikes"
+    stim_file = "./data/Stimulus/PureToneParameters.mat"
+    stim = loadmat(stim_file)["stimulus_presentation_order"]
+    print("Length:", stim.shape)
+    final = {}
+
+    # New: Neuron_file -> Frequency -> Amps -> data
+    for neuron in os.listdir(path):
+        final[neuron] = []
+        files = os.path.join(path, neuron)
+        file = ""
+        for f in os.listdir(files):
+            if f"spike{spike}" in f:
+                file = os.path.join(files, f)
+                break
+        mat_file = loadmat(file)
+        triggers = mat_file["trigger"][0]
+        response = mat_file["binarySpike"].T[0]
+
+        for idx in range(stim.shape[0]):
+            data = response[triggers[idx]: triggers[idx] + 3000].tolist()
+            final[neuron].extend(data)
+
+    return final
 
 
 def get_response_data_all_triggers(file_path: str, trigger_length: int = 3000) -> np.ndarray:

@@ -4,128 +4,107 @@ import seaborn as sns
 
 
 # FRA Plot
-def fra_plot(data, n_neurons=66, n_freq=6):
-    if n_neurons > 66:
-        print("Too many neurons. Max: 66")
+def fra_plot(data, n_neuron=66, n_freq=(0, 45)):
+    if n_neuron > 66 or (n_freq[0] < 0 and n_freq[1] > 45):
+        print("Invalid input")
         return
 
-    if n_freq > 45:
-        print("Too many frequencies. Max: 45")
-        return
+    for idx, (n, v) in enumerate(data.items()):
+        if idx == n_neuron:
+            break
+        neuron = sorted(list(v.items()), key=lambda a: a[0])
+        new = [[] for _ in range(8)]
 
-    # 66 x 360
-    # Frequency, Amplitude, Time Series
-    df = np.empty((66, 8, n_freq * 500))
+        for freq, amps in neuron[n_freq[0]:n_freq[1]]:
+            ordered_amps = sorted(list(amps.items()), key=lambda a: a[0])
+            for i, (amp, data) in enumerate(ordered_amps):
+                new[i].extend(data)
 
-    n = 0  # Frequencies
-    sort_items = sorted(data.items(), key=lambda item: int(item[0]))
-    for freq, amps in sort_items:
-        m = 0  # Amplitudes
-        sort_amps = sorted(amps.items(), key=lambda item: int(item[0]))
-        if n > n_freq - 1:
-            continue
-        for amp, value in sort_amps:
-            for idx, rec in enumerate(value):
-                for ids, obs in enumerate(rec[:500]):
-                    df[idx, m, n * 500 + ids] = obs
-            m += 1
-        n += 1
+        fig, ax = plt.subplots(8, 1)
+        for j in range(len(new)):
+            i = 7 - j
+            ax[i].plot(new[j], color = "black", linewidth = 0.5)
+            ax[i].spines['top'].set_visible(False)
+            ax[i].spines['right'].set_visible(False)
+            ax[i].spines['left'].set_visible(False)
+            ax[i].set_xticks([])
+            if i == 7:
+                ax[i].set_xticks([0], labels=["40"])
+                ticks = [t for t in range(0, len(new[0]), 3000)]
+                labels = [f"{neuron[i][0] / 1000:.2f}" for i in range(n_freq[0], n_freq[1])]
+                if len(ticks) > 5:
+                    ticks = [ticks[i] for i in range(0, len(ticks), int(len(ticks) / 5))]
+                    labels = [labels[i] for i in range(0, len(labels), int(len(labels) / 5))]
+                ax[i].set_xticks(ticks, labels=labels)
+            ax[i].set_yticks([])
+            ax[i].set_ylabel(int(i * 10), fontsize=9, rotation="horizontal")
 
-    for i in range(n_neurons):
-        fig, axs = plt.subplots(8, 1)
-
-        for nax, ax in enumerate(axs.flatten()):
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-            ax.set_yticks([])
-            if nax != 7:
-                ax.set_xticks([])
-            else:
-                keys = [item[0] for item in sort_items]
-                f = [str(int(key / 1000)) for key in keys[:n_freq]]
-                g = [(interval * 500) for interval in range(len(f))]
-                if len(f) > 5:
-                    f = [f[i] for i in range(0, len(f), int(len(f) / 5))]
-                    g = [g[i] for i in range(0, len(g), int(len(g) / 5))]
-                ax.set_xticks(g, labels=f)
-
-        for j in range(8):
-            axs[j].plot(df[i, (7 - j), :], color="black", linewidth=0.5)
-            axs[j].set_ylabel((7 - j) * 10, fontsize=9, rotation="horizontal")
-
-        fig.suptitle(f"Neuron {i + 1}")
+        fig.suptitle(f"Neuron {idx + 1}: {n}", fontsize=9)
         fig.text(0.03, 0.5, 'Amplitude', va='center', ha='center', rotation='vertical', fontsize=9)
         fig.text(0.5, 0.03, 'Frequency (Hz)', va='center', ha='center', rotation='horizontal', fontsize=9)
         plt.tight_layout(rect=(0.03, 0.03, 1, 1))
         plt.show()
 
 
-def frequency_response_area(data1, data2):
-    # 66 x 360
-    a = np.empty((66, 8, 45))
-    b = np.empty((66, 8, 45))
+def fra_plot_with_spikes(data, spike_data, n_neuron=66, n_freq=(0, 45)):
+    if n_neuron > 66 or (n_freq[0] < 0 and n_freq[1] > 45):
+        print("Invalid input")
+        return
 
-    n = 0
-    sort_items = sorted(data1.items(), key=lambda item: int(item[0]))
-    for freq, amps in sort_items:
-        m = 0
-        sort_amps = sorted(amps.items(), key=lambda item: int(item[0]))
-        if m > 0:
+    for idx, ((n, v), (sn, sv)) in enumerate(zip(data.items(), spike_data.items())):
+        if idx == n_neuron:
             break
-        for amp, value in sort_amps:
-            for idx, rec in enumerate(value):
-                max_value = np.max(rec[:500])
-                a[idx, m, n] = max_value
-            m += 1
-        n += 1
 
-    n = 0
-    sort_items = sorted(data2.items(), key=lambda item: int(item[0]))
-    for freq, amps in sort_items:
-        m = 0
-        sort_amps = sorted(amps.items(), key=lambda item: int(item[0]))
-        if m > 0:
-            break
-        for amp, value in sort_amps:
-            for idx, rec in enumerate(value):
-                max_value = np.max(rec[:500])
-                b[idx, m, n] = max_value
-            m += 1
-        n += 1
+        neuron = sorted(list(v.items()), key=lambda a: a[0])
+        spike_neuron = sorted(list(sv.items()), key=lambda a: a[0])
+        new = [[] for _ in range(8)]
+        spike_new = [[] for _ in range(8)]
 
-    for i in range(66):
-        f, ax = plt.subplots(1, 2)
-        plt.title(f"Neuron {i + 1}")
-        sns.heatmap(a[i, :, :], ax=ax[0])
-        ax[0].set_title("Raw")
-        sns.heatmap(b[i, :, :], ax=ax[1])
-        ax[1].set_title("Normalized")
-        plt.gca().invert_yaxis()
+        for freq, amps in neuron[n_freq[0]:n_freq[1]]:
+            ordered_amps = sorted(list(amps.items()), key=lambda a: a[0])
+            for i, (amp, data) in enumerate(ordered_amps):
+                new[i].extend(data)
+
+        for freq, amps in spike_neuron[n_freq[0]:n_freq[1]]:
+            ordered_amps = sorted(list(amps.items()), key=lambda a: a[0])
+            for i, (amp, data) in enumerate(ordered_amps):
+                spike_new[i].extend(data)
+
+        fig, ax = plt.subplots(8, 1)
+        for j in range(len(new)):
+            i = 7 - j
+            ax[i].plot(new[j], color = "black", linewidth = 0.5)
+            for x, y in enumerate(spike_new[j]):
+                if y == 1:
+                    ax[i].axvline(x, color = "red", linewidth = 0.5)
+            ax[i].spines['top'].set_visible(False)
+            ax[i].spines['right'].set_visible(False)
+            ax[i].spines['left'].set_visible(False)
+            ax[i].set_xticks([])
+            if i == 7:
+                ax[i].set_xticks([0], labels=["40"])
+                ticks = [t for t in range(0, len(new[0]), 3000)]
+                labels = [f"{neuron[i][0] / 1000:.2f}" for i in range(n_freq[0], n_freq[1])]
+                if len(ticks) > 5:
+                    ticks = [ticks[i] for i in range(0, len(ticks), int(len(ticks) / 5))]
+                    labels = [labels[i] for i in range(0, len(labels), int(len(labels) / 5))]
+                ax[i].set_xticks(ticks, labels=labels)
+            ax[i].set_yticks([])
+            ax[i].set_ylabel(int(i * 10), fontsize=9, rotation="horizontal")
+
+        fig.suptitle(f"Neuron {idx + 1}: {n}", fontsize=9)
+        fig.text(0.03, 0.5, 'Amplitude', va='center', ha='center', rotation='vertical', fontsize=9)
+        fig.text(0.5, 0.03, 'Frequency (Hz)', va='center', ha='center', rotation='horizontal', fontsize=9)
+        plt.tight_layout(rect=(0.03, 0.03, 1, 1))
         plt.show()
 
-
-def graphing(data):
-    # Frequencies by Amplitudes
-    freq_n = 5
-    amp_n = 5
-    f, ax = plt.subplots(freq_n, amp_n)
-    n = 0
-
-    for _, amps in data.items():
-        if n >= freq_n:
-            break
-        m = 0
-        for amp, data in amps.items():
-            if m >= amp_n:
-                break
-            for rec in data:
-                ax[n, m].plot(rec, alpha=0.5, color="red")
-            ax[n, m].plot(np.mean(data, axis=0), color="blue")
-            m += 1
-        n += 1
-
-    # Baseline: 150 ms - 300 ms -> 1500 - 3000
-    # z-score using the sum of the 360 units.
-
+def plot_firing_rate(firing_rate, interval=None):
+    if interval is not None:
+        firing_rate = firing_rate[interval[0]:interval[1]]
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.step([i for i in range(len(firing_rate))], firing_rate, where='pre', color="black")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.grid(True)
+    plt.tight_layout()
     plt.show()
