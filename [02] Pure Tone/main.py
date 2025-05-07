@@ -1,53 +1,49 @@
-import sys
-import pickle
+from functools import partial
+import seaborn as sns
+
+import librosa
+from scipy.ndimage import gaussian_filter
 
 from tools import *
-from scipy.io import loadmat
+from scipy.io import loadmat, wavfile
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-import h5py
+
+def response():
+    data, order = load_data("./data/pure_tones_spikes/", spike=10)
+    kernel = partial(gaussian_filter, sigma=1)
+    fr = firing_rate(data, 10, population=True, kernel=kernel)
+    print(fr.shape)
+    plot_firing_rate(fr, (0, 2000))
 
 
-def load_spike(spike = 10):
-    # TODO: Still need to implement details
-    path = "./data/pure_tones_spikes"
+def load_stimuli(path: str = "./data/Stimulus/PureToneSound.wav"):
+    sample_rate, data = wavfile.read(path)
 
-    stim_file = "./data/Stimulus/PureToneParameters.mat"
-    stim = loadmat(stim_file)
-    order = [(freq, amp) for _, _, freq, amp in stim["stimulus_presentation_order"]]
+    trial1 = data[480000:11328000, :]
+    trial2 = trial1[0:10368000, :]
 
-    final = {}
+    final = np.empty((360, 45, 300))
 
-    for neuron in os.listdir(path):
-        final[neuron] = {}
-        files = os.path.join(path, neuron)
-        file = ""
-        for f in os.listdir(files):
-            if f"spike{spike}" in f:
-                file = os.path.join(files, f)
-                break
-        mat_file = loadmat(file)
-        triggers = mat_file["trigger"][0]
-        response = mat_file["binarySpike"].T[0]
+    signal = trial2[:, 0].reshape(360, 28800)
 
-        for idx, (freq, amp) in enumerate(order):
-            if freq not in final[neuron]:
-                final[neuron][freq] = {}
-            data = response[triggers[idx]: triggers[idx] + 3000].tolist()
-
-            final[neuron][freq][amp] = data
+    for i in range(signal.shape[0]):
+        if i == 3:
+            break
+        a = signal[i, :]
+        b = gammagram(a, fs=96000, window_time=0.001, hop_time=0.001, channels=45, f_min=4000, f_max=40000)
+        C = np.abs(np.transpose(b))
+        D = librosa.power_to_db(C, ref=1)
+        final[i, :, :] = D
 
     return final
 
-if __name__ == '__main__':
-    # a = load_data()
-    a = load_data_by_neuron(55)
-    df = a['2017-08-15_cell1']
-    print(np.unique(np.array(df)))
-    b = firing_rate(a, 100, population=True)
-    print(len(b))
-    plot_firing_rate(b, (0,1000))
-    # b = standardize_response_100ms(a)
+def stimuli_heatmap(data, interval):
+    data = np.hstack(data)[:, interval[0]:interval[1]]
+    print(data.shape)
+    sns.heatmap(data, cmap="viridis")
+    plt.show()
 
-    # fra_plot_with_spikes(b, load_spike(10), n_neuron=66, n_freq=(0, 45))
+if __name__ == '__main__':
+    # response()
+    data = load_stimuli()
+    stimuli_heatmap(data, (0, 2000))

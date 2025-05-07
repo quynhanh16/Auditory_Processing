@@ -7,121 +7,63 @@ import os
 from scipy.io import loadmat
 
 
-def load_data():
-    # TODO: Still need to implement details
-    path = "./data/pure_tones"
-    stim_file = "./data/Stimulus/PureToneParameters.mat"
-    stim = loadmat(stim_file)
-    order = [(freq, amp) for _, _, freq, amp in stim["stimulus_presentation_order"]]
-    final = {}
-
-    # New: Neuron_file -> Frequency -> Amps -> data
-    for neuron in os.listdir(path):
-        final[neuron] = {}
-        files = os.path.join(path, neuron)
-        file = os.path.join(files, os.listdir(files)[0])
+def load_response_information(path: str, spike: int | None) -> (np.ndarray, np.ndarray):
+    # Loading trigger and response data for raw data.
+    if spike is None:
+        file = os.path.join(path, os.listdir(path)[0])
         mat_file = loadmat(file)
         triggers = mat_file["trigger"][0]
         response = mat_file["response_signal"].T[0]
-
-        for idx, (freq, amp) in enumerate(order):
-            if freq not in final[neuron]:
-                final[neuron][freq] = {}
-            data = response[triggers[idx]: triggers[idx] + 3000].tolist()
-
-            final[neuron][freq][amp] = data
-
-    return final
-
-
-def load_data_by_neuron(spike = 10):
-    """
-    Load spikes by neuron
-
-    :return:
-    """
-    path = "./data/pure_tones_spikes"
-    stim_file = "./data/Stimulus/PureToneParameters.mat"
-    stim = loadmat(stim_file)["stimulus_presentation_order"]
-    print("Length:", stim.shape)
-    final = {}
-
-    # New: Neuron_file -> Frequency -> Amps -> data
-    for neuron in os.listdir(path):
-        final[neuron] = []
-        files = os.path.join(path, neuron)
+    # Loading trigger and response data for spike data.
+    else:
         file = ""
-        for f in os.listdir(files):
+        for f in os.listdir(path):
             if f"spike{spike}" in f:
-                file = os.path.join(files, f)
+                file = os.path.join(path, f)
                 break
         mat_file = loadmat(file)
         triggers = mat_file["trigger"][0]
-        response = mat_file["binarySpike"].T[0]
+        if "binarySpike" in mat_file:
+            response = mat_file["binarySpike"].T[0]
+        else:
+            raise Exception("File does not contain binary spikes")
 
-        for idx in range(stim.shape[0]):
-            data = response[triggers[idx]: triggers[idx] + 3000].tolist()
-            final[neuron].extend(data)
-
-    return final
+    return triggers, response
 
 
-def get_response_data_all_triggers(file_path: str, trigger_length: int = 3000) -> np.ndarray:
+def load_data(path: str = "./data/pure_tones", stim_path: str = "./data/Stimulus/PureToneParameters.mat",
+              stim_window: int = 3000, spike: int | None = None) -> (dict[str, np.ndarray], np.ndarray):
     """
-    Given a path to a .mat file, return the nth trigger of specified length.
-    For this dataset, the trigger length is set to 3000.
+    Output: Dictionary: Neuron -> Response Data
 
-    :param file_path:
-    :param trigger_length:
-    :return: np.ndarray
+    :param path:
+    :param stim_path:
+    :param stim_window:
+    :param spike:
+    :return:
     """
-    file = loadmat(file_path)
-    response_signals = file['response_signal']
-    triggers = file['trigger'][0]
+    # Loading stimulus file
+    stim = loadmat(stim_path)
+    order = stim["stimulus_presentation_order"][:, 2:4]
+    stim_size = order.shape
+    final = {}
 
-    result = response_signals[triggers[0]: triggers[0] + trigger_length]
-    for trigger in triggers[1:]:
-        result = np.concatenate((result, response_signals[trigger: trigger + trigger_length]))
+    # New: Neuron (date): Response data
+    for neuron in os.listdir(path):
+        neuron_data = []
 
-    return result
+        # Loading neuron data
+        files = os.path.join(path, neuron)
+        triggers, response = load_response_information(files, spike)
 
+        # Collecting all response data (from the start to the stimuli to the next 3000 data points).
+        for idx in range(stim_size[0]):
+            int_data = response[triggers[idx]: triggers[idx] + stim_window].tolist()
+            neuron_data.extend(int_data)
 
-def get_response_data_by_trigger(file_path: str, n_trigger: int, trigger_length: int = 3000) -> np.ndarray:
-    """
-    Given a path to a .mat file, return the nth trigger of specified length.
-    For this dataset, the trigger length is set to 3000.
+        final[neuron] = np.array(neuron_data)
 
-    :param file_path:
-    :param n_trigger:
-    :param trigger_length:
-    :return: np.ndarray
-    """
-    file = loadmat(file_path)
-    response_signals = file['response_signal']
-    triggers = file['trigger'][0]
-
-    trigger = triggers[n_trigger - 1]
-
-    return response_signals[trigger: trigger + trigger_length].T[0]
-
-
-def get_response_data_by_trigger_spikes(file_path: str, n_trigger: int, trigger_length: int = 3000) -> np.ndarray:
-    """
-    Given a path to a .mat file, return the nth trigger of specified length.
-    For this dataset, the trigger length is set to 3000.
-
-    :param file_path:
-    :param n_trigger:
-    :param trigger_length:
-    :return: np.ndarray
-    """
-    file = loadmat(file_path)
-    response_signals = file['binarySpike']
-    triggers = file['trigger'][0]
-
-    trigger = triggers[n_trigger - 1]
-
-    return response_signals[trigger: trigger + trigger_length].T[0]
+    return final, order
 
 
 def load_state(filename: str) -> Any:
@@ -182,3 +124,34 @@ def save_state(filename: str, data: Any) -> None:
     """
     with open(filename, "wb") as pickle_file:
         pickle.dump(data, pickle_file)
+
+
+def response_data_by_order(data, order, n_order: int = 360):
+    """
+    Output: Convert a dictionary of Neuron -> Response Data to a dictionary of Neuron -> Frequency -> Amplitude ->
+    Response Data.
+
+    :param data:
+    :param order:
+    :param n_order:
+    :return:
+    """
+    final = {}
+
+    for neuron, data in data.items():
+        j = 0
+        window_size = data.shape / n_order
+        final[neuron] = {}
+
+        for freq, amp in order:
+            if freq not in final[neuron]:
+                final[neuron][freq] = {}
+
+            if amp not in final[neuron][freq]:
+                final[neuron][freq][amp] = []
+
+            final[neuron][freq][amp] = data[j:j + window_size]
+
+            j += window_size
+
+    return final
