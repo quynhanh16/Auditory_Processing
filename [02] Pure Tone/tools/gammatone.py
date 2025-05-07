@@ -1,6 +1,9 @@
-# fliter the sound signal and use gamma bank to convert the time signal into a spectrogram (frequency channel with time)
-# this code is taken from the Pennington and David (2023) paper
-# TODO: Add copyright notice.
+# ------------------------------------------------
+# | This code is taken from the NEMS repository. |
+# ------------------------------------------------
+
+# This code is derived from the gammatone toolkit, licensed under the 3-clause
+# BSD license: https://github.com/detly/gammatone/blob/master/COPYING
 
 from __future__ import division
 import numpy as np
@@ -253,7 +256,6 @@ def make_erb_filters(fs, centre_freqs, width=1.0, glasberg_moore=None):
     centre_freqs : np.ndarray, dtype=float.
         Center frequencies returned by `centre_freqs(fs, ...)`.
     width : float; default=1.0.
-        TODO: what does width affect?
     glasberg_moore : dict; optional.
         A dictionary with keys 'ear_q', 'min_bw', and 'order'. Change these
         values if you wish to use a different ERB scale.
@@ -318,9 +320,6 @@ def make_erb_filters(fs, centre_freqs, width=1.0, glasberg_moore=None):
 
     common = -T * np.exp(-(B * T))
 
-    # TODO: This could be simplified to a matrix calculation involving the
-    # constant first term and the alternating rt_pos/rt_neg and +/-1 second
-    # terms
     k11 = np.cos(arg) + rt_pos * np.sin(arg)
     k12 = np.cos(arg) - rt_pos * np.sin(arg)
     k13 = np.cos(arg) + rt_neg * np.sin(arg)
@@ -379,7 +378,7 @@ def erb_filterbank(wave, coefs):
 
     """
 
-    # TODO: why the hard-coded 9?
+    # WARNING: why the hard-coded 9?
     output = np.zeros((coefs[:, 9].shape[0], wave.shape[0]))
 
     gain = coefs[:, 9]

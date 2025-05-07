@@ -8,6 +8,24 @@ from scipy.io import loadmat
 
 
 def load_response_information(path: str, spike: int | None) -> (np.ndarray, np.ndarray):
+    """
+    Loads trigger and response data from .mat files located in a specified directory.
+
+    This function accesses a directory containing .mat files with either raw or spike-based neuronal data.
+    If the `spike` parameter is None, it assumes the directory contains raw data and loads the first available file.
+    If a specific `spike` index is provided, it searches for a file whose name includes the substring "spike{spike}"
+    and loads the corresponding binary spike data.
+
+    :param path: Path to the directory containing the .mat files for either raw or spike data.
+    :param spike: Integer specifying the spike index to load. If None, raw data from the first file is loaded.
+                  If an integer, the function searches for a file containing "spike{spike}" in its name and
+                  retrieves the corresponding binary spike signal.
+    :return: A tuple containing two NumPy arrays:
+             (1) triggers - A 1D array of trigger signals.
+             (2) response - A 1D array of either raw response signals or binary spike signals,
+                         depending on the `spike` parameter.
+    """
+
     # Loading trigger and response data for raw data.
     if spike is None:
         file = os.path.join(path, os.listdir(path)[0])
@@ -34,13 +52,23 @@ def load_response_information(path: str, spike: int | None) -> (np.ndarray, np.n
 def load_data(path: str = "./data/pure_tones", stim_path: str = "./data/Stimulus/PureToneParameters.mat",
               stim_window: int = 3000, spike: int | None = None) -> (dict[str, np.ndarray], np.ndarray):
     """
-    Output: Dictionary: Neuron -> Response Data
+    Loads neural response data for each neuron in a given directory, aligned to stimulus trigger events.
 
-    :param path:
-    :param stim_path:
-    :param stim_window:
-    :param spike:
-    :return:
+    This function reads stimulus presentation metadata and loops over each neuron subdirectory to extract 
+    either raw signal data or binary spike data depending on the `spike` parameter. For each stimulus presentation, 
+    it collects the response window starting from the trigger point and extending for `stim_window` samples. 
+    The function builds and returns a dictionary mapping each neuron to its full concatenated response data,
+    along with the stimulus order (frequency, amplitude) used in the experiment.
+
+    :param path: Path to the main directory containing subdirectories for each neuron. Each subdirectory
+                 should contain .mat files with trigger and response data.
+    :param stim_path: Path to the stimulus metadata .mat file containing stimulus presentation order.
+    :param stim_window: Number of data points to extract from the response signal starting at each trigger.
+    :param spike: If None, raw data is extracted. If an integer is provided, the function searches for
+                  spike-specific files and loads binary spike data accordingly.
+    :return: A tuple containing a dictionary and NumPy array:
+            (1) A dictionary mapping neuron names (directory names) to a NumPy array of concatenated response data.
+            (2) A 2D NumPy array containing the stimulus order metadata, where each row is (frequency, amplitude).
     """
     # Loading stimulus file
     stim = loadmat(stim_path)
@@ -126,21 +154,31 @@ def save_state(filename: str, data: Any) -> None:
         pickle.dump(data, pickle_file)
 
 
-def response_data_by_order(data, order, n_order: int = 360):
+def response_data_by_order(response_data: dict[str, np.ndarray], order: np.ndarray) -> dict[str, dict[str, dict[str, np.ndarray]]]:
     """
-    Output: Convert a dictionary of Neuron -> Response Data to a dictionary of Neuron -> Frequency -> Amplitude ->
-    Response Data.
+    Converts flat neuron response data into a structured format organized by frequency and amplitude.
 
-    :param data:
-    :param order:
-    :param n_order:
-    :return:
+    This function restructures a dictionary mapping each neuron to its full response signal into a nested
+    dictionary format: Neuron → Frequency → Amplitude → Response Data. It assumes that the original
+    response array for each neuron is a concatenation of equally sized windows corresponding to stimulus
+    presentations. Each stimulus presentation is described by a frequency and amplitude tuple in the `order` array.
+
+    :param response_data: Dictionary mapping neuron names to their 1D response arrays (concatenated across stimuli).
+    :param order: A 2D NumPy array of shape (N, 2), where each row contains the frequency and amplitude of a stimulus presentation.
+    :return: A nested dictionary where the structure is:
+             {
+                 neuron_name: {
+                     frequency: {
+                         amplitude: response_array
+                     }
+                 }
+             }
     """
     final = {}
 
-    for neuron, data in data.items():
+    for neuron, data in response_data.items():
         j = 0
-        window_size = data.shape / n_order
+        window_size = data.shape[0] / order.shape[0]
         final[neuron] = {}
 
         for freq, amp in order:
