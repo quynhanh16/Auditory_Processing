@@ -1,12 +1,6 @@
 from functools import partial
 
-import matplotlib.pyplot as plt
 from numpy.lib.stride_tricks import sliding_window_view
-from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import mean_squared_error, r2_score
 
 import seaborn as sns
 
@@ -75,69 +69,6 @@ def stimuli_heatmap(stim_data, response_data, order, interval):
     plt.show()
 
 
-def linear_model(X: np.ndarray, y: np.ndarray):
-    """
-    Fitting a simple linear regression model with k-folds as cross-validation.
-
-    :param X:
-    :param y:
-    :return:
-    """
-    pipeline = Pipeline([
-        # ('poly', PolynomialFeatures(include_bias=False)),
-        # ('scaler', StandardScaler()),
-        ('model', LinearRegression())
-    ])
-
-    param_grid = {
-        # 'poly__degree': [1, 2],
-        # 'model__alpha': [0.001, 0.1, 1.0, 10.0]
-    }
-
-    grid = GridSearchCV(pipeline, param_grid, cv=5, verbose=3, scoring='neg_mean_squared_error', return_train_score=True)
-    grid.fit(X, y)
-
-    print("\nCross-Validation Results:")
-    for mean_train, mean_test, params in zip(
-            grid.cv_results_['mean_train_score'],
-            grid.cv_results_['mean_test_score'],
-            grid.cv_results_['params']
-    ):
-        print(f"{params}: Train MSE = {-mean_train:.4f}, Test MSE = {-mean_test:.4f}")
-
-    model = grid.best_estimator_
-    # degree = grid.best_params_['poly__degree']
-    y_pred = model.predict(X)
-
-    final_mse = mean_squared_error(y, y_pred)
-    final_r2 = r2_score(y, y_pred)
-
-    # print(f"\nSelected Polynomial Degree: {degree}")
-    print(f"Final MSE: {final_mse:.4f}")
-    print(f"Final R²: {final_r2:.4f}")
-
-    plt.plot(y[:2000], color="black", label="Actual")
-    plt.plot(y_pred[:2000], color="red", label="Prediction", linewidth=0.7)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    plt.scatter(y_pred, y, color="black", s=1, alpha=0.5)
-    plt.ylabel("Actual")
-    plt.ylabel("predicted")
-    plt.tight_layout()
-    plt.show()
-
-    # Coefficient heatmap
-    coefs = model.named_steps['model'].coef_
-    print("Coefficient", coefs.shape)
-
-    coef_df = np.abs(coefs.reshape(1, -1))  # reshape to 2D for heatmap
-    sns.heatmap(coef_df, cmap="coolwarm", yticklabels=[], cbar_kws={'label': 'Coefficient Magnitude'})
-    plt.title("Coefficient Heatmap")
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.show()
 
 
 def prepare_stimuli(stim_data: np.ndarray, previous_n: int = 200) -> np.ndarray:
@@ -170,10 +101,10 @@ if __name__ == '__main__':
     # plot_firing_rate(response_data, (0, 2000))
 
     # Stimuli
-    data = load_stimuli()
-    stim_data = np.hstack(data)
+    stim_data = load_stimuli()
+    # stimuli_heatmap(stim_data, response_data, order, (0, 2000))
+    stim_data = np.hstack(stim_data)
     stim_data = prepare_stimuli(stim_data)
-    stimuli_heatmap(stim_data, response_data, order, (0, 2000))
 
     print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
-    linear_model(stim_data, response_data)
+    linear_model_lasso(stim_data, response_data)
