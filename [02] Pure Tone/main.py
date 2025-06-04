@@ -11,6 +11,9 @@ from tools import *
 from scipy.io import loadmat, wavfile
 import numpy as np
 import random
+import joblib
+import pickle
+import pandas as pd
 
 np.random.seed(42)
 random.seed(42)
@@ -92,8 +95,7 @@ def prepare_stimuli(stim_data: np.ndarray, previous_n: int = 200) -> np.ndarray:
     final = windows.transpose(1, 0, 2).reshape(108000, -1)
     return final
 
-
-if __name__ == '__main__':
+def run_linear_model():
     # Response
     df, order = load_data("./data/pure_tones_spikes/", spike=55)
     kernel = partial(gaussian_filter, sigma=1)
@@ -107,4 +109,37 @@ if __name__ == '__main__':
     stim_data = prepare_stimuli(stim_data)
 
     print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
-    linear_model_lasso(stim_data, response_data)
+    linear_model(stim_data, response_data)
+
+def save_coefficient_matrix(path_model):
+    loaded_model = joblib.load(path_model)
+    lasso_model = loaded_model.named_steps["model"]
+    coefficients = lasso_model.coef_
+    intercept = lasso_model.intercept_
+    coefficients_df = pd.DataFrame(coefficients)
+    coefficients_df.columns = [f'feature_{i}' for i in range(coefficients_df.shape[1])]
+    coefficients_df["intercept"] = intercept
+    coefficients_df.to_csv("model_coefficients.csv", index=True)
+
+def save_input_output_actual(path_model):
+    df, order = load_data("./data/pure_tones_spikes/", spike=55)
+    loaded_model = joblib.load(path_model)
+    lasso_model = loaded_model.named_steps["model"]
+    X = prepare_stimuli(np.hstack(load_stimuli()))
+    pred = lasso_model.predict(X)
+    kernel = partial(gaussian_filter, sigma=1)
+    response_data = firing_rate(df, 10, population=True, kernel=kernel)
+
+    stim_df = pd.DataFrame(X)
+    pred_df = pd.DataFrame(pred)
+    actual_df = pd.DataFrame(response_data)
+
+    stim_df.to_csv("./stimuli.csv", index=True)
+    pred_df.to_csv("./predictions.csv", index=True)
+    actual_df.to_csv("./actual.csv", index=True)
+
+
+if __name__ == '__main__':
+    # run_linear_model()
+    save_coefficient_matrix("./linear_model.pkl")
+    save_input_output_actual("./linear_model.pkl")
