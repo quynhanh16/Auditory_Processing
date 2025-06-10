@@ -94,24 +94,25 @@ def nonlinear_pipeline(X: np.ndarray, y: np.ndarray):
         score = r2_score(all_true, all_preds)
         print(f"R² for {name}: {score:.4f}")
 
+        # Save the best model for this nonlinear function
+        # Final training on full training set for this function
+        final_pipe = Pipeline([
+            ('scaler', StandardScaler()),
+            ('model', LinearRegression())
+        ])
+        final_pipe.fit(X_train, y_train)
+        joblib.dump(final_pipe, f'best_linear_pipeline_{name}.pkl')
+
+        linear_preds_test = final_pipe.predict(X_test)
+        nl_fit = least_squares(nonlinear_models[name][1], theta, args=(linear_preds_test, y_test))
+        joblib.dump(nl_fit.x, f'best_{name}_params.pkl')
+
         if score > best_score:
             best_score = score
             best_nl_model = nl_func
             best_params = theta
             best_nl_name = name
-
-            # Final training on full training set
-            final_pipe = Pipeline([
-                ('scaler', StandardScaler()),
-                ('model', LinearRegression())
-            ])
-            final_pipe.fit(X_train, y_train)
-            joblib.dump(final_pipe, f'best_linear_pipeline.pkl')
-
-            linear_preds_test = final_pipe.predict(X_test)
-            nl_fit = least_squares(nonlinear_models[name][1], theta, args=(linear_preds_test, y_test))
             best_predictions = nl_func(nl_fit.x, linear_preds_test)
-            joblib.dump(nl_fit.x, f'best_{name}_params.pkl')
 
     print(f"\nBest Nonlinear Function: {best_nl_name} with R²: {best_score:.4f}")
 
@@ -122,7 +123,8 @@ def nonlinear_pipeline(X: np.ndarray, y: np.ndarray):
     plt.legend()
     plt.title(f"Best Model ({best_nl_name}) - First 2000 Predictions")
     plt.tight_layout()
-    plt.show()
+    plt.savefig("best_model_predictions.png")  # Save plot instead of showing
+    plt.close()
 
     # Scatter plot
     min_val = min(y_test.min(), best_predictions.min())
@@ -137,7 +139,8 @@ def nonlinear_pipeline(X: np.ndarray, y: np.ndarray):
     plt.xlim(min_val, max_val)
     plt.ylim(min_val, max_val)
     plt.tight_layout()
-    plt.show()
+    plt.savefig("predicted_vs_actual.png")  # Save plot instead of showing
+    plt.close()
 
     # Coefficient heatmap
     coefs = final_pipe.named_steps['model'].coef_
@@ -150,6 +153,7 @@ def nonlinear_pipeline(X: np.ndarray, y: np.ndarray):
         plt.xlabel("Time")
         plt.ylabel("Frequency")
         plt.tight_layout()
-        plt.show()
+        plt.savefig("coefficient_heatmap.png")  # Save plot instead of showing
+        plt.close()
     except Exception as e:
         print("Error displaying heatmap:", e)

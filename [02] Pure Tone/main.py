@@ -97,7 +97,7 @@ def prepare_stimuli(stim_data: np.ndarray, previous_n: int = 200) -> np.ndarray:
 
 def run_linear_model():
     # Response
-    df, order = load_data("./data/pure_tones_spikes/", spike=55)
+    df, order = load_data("./data/pure_tones/", spike=55)
     kernel = partial(gaussian_filter, sigma=1)
     response_data = firing_rate(df, 10, population=True, kernel=kernel)
     # plot_firing_rate(response_data, (0, 2000))
@@ -140,6 +140,14 @@ def save_input_output_actual(path_model):
 
 
 if __name__ == '__main__':
-    # run_linear_model()
-    save_coefficient_matrix("./linear_model.pkl")
-    save_input_output_actual("./linear_model.pkl")
+    df, order = load_data("./data/pure_tones/", spike=55)
+    kernel = partial(gaussian_filter, sigma=1)
+    response_data = firing_rate(df, 10, population=True, kernel=kernel)
+
+    stim_data = load_stimuli()
+    stim_data = np.hstack(stim_data)
+    stim_data = prepare_stimuli(stim_data)
+
+    print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
+    nonlinear_pipeline(stim_data, response_data)
+    cnn_model(stim_data, response_data)
