@@ -57,7 +57,7 @@ def set_seed(seed: int = 42):
 
 
 def cnn_model(stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45, m: int = 201,
-              epochs: int = 20, batch_size: int = 64, lr: float = 1e-3,
+              epochs: int = 40, batch_size: int = 64, lr: float = 1e-3,
               model_path: str = "cnn_model.pt", seed: int = 42):
     """
     Train a CNNModel on the provided stimulus and firing rate, save the model and plots.

@@ -151,5 +151,5 @@ if __name__ == '__main__':
 
     print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
     # nonlinear_pipeline(stim_data, response_data)
-    # cnn_model(stim_data, response_data)
-    evaluate_cnn_model("cnn_model.pt", stim_data, response_data)
+    cnn_model(stim_data, response_data)
+    # evaluate_cnn_model("cnn_model.pt", stim_data, response_data)
