@@ -5,6 +5,9 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
+import random
+import os
 
 
 class CNNModel(nn.Module):
@@ -39,9 +42,23 @@ class CNNModel(nn.Module):
         return self.fc2(x)
 
 
+def set_seed(seed: int = 42):
+    """
+    Set seed for reproducibility across torch, numpy, and random.
+    """
+    import torch
+    import numpy as np
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 def cnn_model(stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45, m: int = 201,
               epochs: int = 20, batch_size: int = 64, lr: float = 1e-3,
-              model_path: str = "cnn_model.pt"):
+              model_path: str = "cnn_model.pt", seed: int = 42):
     """
     Train a CNNModel on the provided stimulus and firing rate, save the model and plots.
 
@@ -55,8 +72,13 @@ def cnn_model(stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45,
         lr: Learning rate
         model_path: Path to save the trained model
     """
+    set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CNNModel(d_plus_1, m).to(device)
+
+    # Create results directory
+    results_dir = "cnn_results"
+    os.makedirs(results_dir, exist_ok=True)
 
     # Reshape stimulus to (n_samples, d_plus_1, m)
     X = stimulus.reshape(-1, d_plus_1, m)
@@ -99,40 +121,52 @@ def cnn_model(stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45,
     # Evaluate and plot
     model.eval()
     with torch.no_grad():
-        y_pred = []
+        # Test set
+        y_pred_test = []
         y_test = []
         for xb, yb in test_loader:
             xb = xb.to(device)
             preds = model(xb).cpu().numpy().flatten()
-            y_pred.append(preds)
+            y_pred_test.append(preds)
             y_test.append(yb.numpy().flatten())
-        y_pred = np.concatenate(y_pred)
+        y_pred_test = np.concatenate(y_pred_test)
         y_test = np.concatenate(y_test)
 
-    # Plot actual vs. predicted
+        # Train set
+        y_pred_train = []
+        y_train_true = []
+        for xb, yb in train_loader:
+            xb = xb.to(device)
+            preds = model(xb).cpu().numpy().flatten()
+            y_pred_train.append(preds)
+            y_train_true.append(yb.numpy().flatten())
+        y_pred_train = np.concatenate(y_pred_train)
+        y_train_true = np.concatenate(y_train_true)
+
+    # Plot actual vs. predicted (test)
     plt.figure(figsize=(12, 4))
     plt.plot(y_test[:2000], color="black", label="Actual")
-    plt.plot(y_pred[:2000], color="red", label="Prediction", linewidth=0.7)
+    plt.plot(y_pred_test[:2000], color="red", label="Prediction", linewidth=0.7)
     plt.legend()
     plt.title("CNN: First 2000 Predictions (Test Set)")
     plt.tight_layout()
-    plt.savefig("cnn_actual_vs_predicted.png")
+    plt.savefig(os.path.join(results_dir, "cnn_actual_vs_predicted.png"))
     plt.close()
 
-    # Scatter plot
-    min_val = min(y_test.min(), y_pred.min())
-    max_val = max(y_test.max(), y_pred.max())
+    # Scatter plot (test)
+    min_val = min(y_test.min(), y_pred_test.min())
+    max_val = max(y_test.max(), y_pred_test.max())
     plt.figure(figsize=(6, 6))
-    plt.scatter(y_pred, y_test, color="black", s=1, alpha=0.5)
+    plt.scatter(y_pred_test, y_test, color="black", s=1, alpha=0.5)
     plt.plot([min_val, max_val], [min_val, max_val], 'r--')
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    plt.title("CNN: Predicted vs Actual")
+    plt.title("CNN: Predicted vs Actual (Test Set)")
     plt.axis('equal')
     plt.xlim(min_val, max_val)
     plt.ylim(min_val, max_val)
     plt.tight_layout()
-    plt.savefig("cnn_predicted_vs_actual.png")
+    plt.savefig(os.path.join(results_dir, "cnn_predicted_vs_actual.png"))
     plt.close()
 
     # Plot first conv layer weights as a heatmap (for each filter)
@@ -143,5 +177,57 @@ def cnn_model(stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45,
         plt.colorbar(label="Weight")
         plt.title(f"CNN Conv1 Filter {i}")
         plt.tight_layout()
-        plt.savefig(f"cnn_conv1_filter_{i}.png")
+        plt.savefig(os.path.join(results_dir, f"cnn_conv1_filter_{i}.png"))
         plt.close()
+
+    # Output R² for training and testing set
+    r2_train = r2_score(y_train_true, y_pred_train)
+    r2_test = r2_score(y_test, y_pred_test)
+    print(f"R² score (train): {r2_train:.4f}")
+    print(f"R² score (test):  {r2_test:.4f}")
+
+
+def evaluate_cnn_model(model_path: str, stimulus: np.ndarray, firing_rate: np.ndarray, d_plus_1: int = 45, m: int = 201, batch_size: int = 64, seed: int = 42):
+    """
+    Loads a CNN model from file, predicts on the given stimulus, and returns the R² score.
+
+    Args:
+        model_path: Path to the saved model (.pt file)
+        stimulus: Input features, shape (n_samples, d+1 * m)
+        firing_rate: Target values, shape (n_samples,)
+        d_plus_1: Height of input (default 45)
+        m: Width of input (default 201)
+        batch_size: Batch size for evaluation
+
+    Returns:
+        r2: R² score of predictions
+    """
+    set_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = CNNModel(d_plus_1, m).to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+
+    # Reshape stimulus to (n_samples, d_plus_1, m)
+    X = stimulus.reshape(-1, d_plus_1, m)
+    y = firing_rate
+
+    X_tensor = torch.tensor(X, dtype=torch.float32).unsqueeze(1)  # (N, 1, d+1, m)
+    y_tensor = torch.tensor(y, dtype=torch.float32).unsqueeze(1)  # (N, 1)
+    dataset = TensorDataset(X_tensor, y_tensor)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+
+    preds = []
+    y_true = []
+    with torch.no_grad():
+        for xb, yb in loader:
+            xb = xb.to(device)
+            pred = model(xb).cpu().numpy().flatten()
+            preds.append(pred)
+            y_true.append(yb.numpy().flatten())
+    preds = np.concatenate(preds)
+    y_true = np.concatenate(y_true)
+
+    r2 = r2_score(y_true, preds)
+    print(f"R² score: {r2:.4f}")
+    return r2

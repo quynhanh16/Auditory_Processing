@@ -15,6 +15,7 @@ import joblib
 import pickle
 import pandas as pd
 
+# TODO: Verify that the matrices are shaped correctly
 np.random.seed(42)
 random.seed(42)
 
@@ -149,5 +150,6 @@ if __name__ == '__main__':
     stim_data = prepare_stimuli(stim_data)
 
     print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
-    nonlinear_pipeline(stim_data, response_data)
-    cnn_model(stim_data, response_data)
+    # nonlinear_pipeline(stim_data, response_data)
+    # cnn_model(stim_data, response_data)
+    evaluate_cnn_model("cnn_model.pt", stim_data, response_data)
