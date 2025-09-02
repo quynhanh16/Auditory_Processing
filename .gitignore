@@ -15,5 +15,7 @@ figures/
 *.h5
 *.mat
 *.wav
+*.png
+*.pt
 
 .DS_Store
