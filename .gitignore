@@ -17,5 +17,6 @@ figures/
 *.wav
 *.png
 *.pt
+*.csv
 
 .DS_Store

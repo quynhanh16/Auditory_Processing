@@ -1,5 +1,7 @@
 import os
 
+from tools.utils import load_csv, save_csv
+
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Temporal Fix: TensorFlow on Windows
 
 import numpy as np
@@ -31,29 +33,35 @@ def preparing_data() -> tuple[RasterizedSignal, RasterizedSignal]:
     global y_mean, y_std
     # Loading files
     tgz_file: str = "A1_NAT4_ozgf.fs100.ch18.tgz"
-    recordings_file = "./data/recordings.pkl"
+    stimuli_file = "./data/stimuli.csv"
+    response_file = "./data/response.csv"
 
     with tqdm(total=100, desc="Loading Data") as main_pbar:
         try:
-            if load_state(recordings_file) is None:
+            if load_csv(stimuli_file) is None or load_csv(response_file) is None:
                 main_pbar.update(5)
-                rec = load_datafile(tgz_file, False)
+                recording = load_datafile(tgz_file, False)
                 main_pbar.update(5)
-                stim, resp = splitting_recording(rec, False)
+                rasterized_stim, rasterized_resp = splitting_recording(recording, False)
+                stim = rasterized_stim._data
+                resp = rasterized_resp._data
                 main_pbar.update(5)
-                save_state(recordings_file, (stim, resp))
+                save_csv(stimuli_file, stim)
+                save_csv(response_file, resp)
                 main_pbar.update(5)
             else:
-                stim, resp = load_state(recordings_file)
+                stim = load_csv(stimuli_file)
+                resp = load_csv(response_file)
                 main_pbar.update(20)
         except Exception as e:
-            raise RuntimeError(f"Error: An error occurred when trying to load/save {recordings_file}.\n\t{e}")
+            raise RuntimeError(f"Error: An error occurred when trying to load/save {stimuli_file} or {response_file}.\n\t{e}")
 
-        y_mean = np.mean(resp._data)
-        y_std = np.std(resp._data)
+        y_mean = np.mean(resp)
+        y_std = np.std(resp)
         train_int = (27, stim.shape[1] / 100)
 
         # File names
+        # TODO: Change to csv
         train_stim_file = "./data/train_stimuli.pkl"
         train_resp_file = "./data/train_response.pkl"
         val_stim_file = "./data/val_stimuli.pkl"

@@ -1,3 +1,7 @@
+# ------------------------------------------------
+# | This code is taken from the NEMS repository. |
+# ------------------------------------------------
+
 from functools import wraps
 import re
 import warnings

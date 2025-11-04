@@ -1,4 +1,4 @@
-# Pure Tone Neural Analysis
+# Auditory Processing
 
 ## Introduction
 
@@ -13,13 +13,13 @@ Ensure you have Python version 3.9 or higher installed on your system.
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/your-repo/PureToneNeuralAnalysis.git
+   git clone https://github.com/quynhanh16/Auditory_Processing.git
    ```
 
 2. **Create a Python Virtual Environment**
 
    ```bash
-   python -m venv ./pure-tone-env
+   python -m venv ./.venv
    ```
 
 3. **Activate the Virtual Environment**
@@ -27,19 +27,19 @@ Ensure you have Python version 3.9 or higher installed on your system.
    On macOS/Linux:
 
    ```bash
-   source pure-tone-env/bin/activate
+   source .venv/bin/activate
    ```
 
    On Windows:
 
    ```bash
-   .\pure-tone-env\Scripts\activate
+   .\.venv\Scripts\activate
    ```
 
 4. **Install Required Packages**
 
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
 ### Downloading the Data
@@ -56,56 +56,6 @@ After setting up the environment and downloading the data, you can run the proje
 ```bash
 python main.py
 ```
-
-## Project Structure
-
-The project is organized into the following directories and files:
-
-```
-data/
-tools/
-    firing_rate.py
-    gammatone.py
-    graphing.py
-    normalization.py
-    utils.py
-main.py
-requirements.txt
-README.md
-```
-
-- **`data/`**: Contains the raw and processed data files.
-- **`tools/`**: Includes utility scripts for data processing, firing rate calculations, normalization, and visualization.
-- **`main.py`**: The main script for running the project.
-- **`requirements.txt`**: Lists the dependencies required for the project.
-
-## Key Functions
-
-### Data Loading and Processing
-
-- **`load_data()`**: Loads neural response data and aligns it with stimulus triggers.
-- **`load_stimuli()`**: Processes auditory stimuli into a spectrogram-like representation using gammatone filters.
-
-### Firing Rate Analysis
-
-- **`firing_rate()`**: Computes firing rates for individual neurons or populations using fixed or sliding windows.
-
-### Visualization
-
-- **`fra_plot()`**: Generates Frequency Response Area (FRA) plots for neurons.
-- **`stimuli_heatmap()`**: Creates heatmaps to visualize the relationship between stimuli and neural responses.
-
-### Machine Learning
-
-- **`run_linear_model()`**: Prepares stimuli and response data, trains a linear regression model, and evaluates its performance.
-
-## Results
-
-The project outputs various results, including:
-
-- **Firing rate plots**: Visualize the firing rate over time.
-- **Heatmaps**: Show the relationship between stimuli and neural responses.
-- **Model coefficients**: Save the trained model's coefficients for further analysis.
 
 ## Credit
 

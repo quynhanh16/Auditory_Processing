@@ -141,7 +141,7 @@ def save_input_output_actual(path_model):
 
 
 if __name__ == '__main__':
-    df, order = load_data("./data/pure_tones/", spike=55)
+    df, order = load_data("./data/pure_tones_spikes/", spike=55)
     kernel = partial(gaussian_filter, sigma=1)
     response_data = firing_rate(df, 10, population=True, kernel=kernel)
 
@@ -150,6 +150,7 @@ if __name__ == '__main__':
     stim_data = prepare_stimuli(stim_data)
 
     print("Firing rate shape:", response_data.shape, "Stimulus shape:", stim_data.shape)
+    linear_model_lasso(stim_data, response_data)
     # nonlinear_pipeline(stim_data, response_data)
-    cnn_model(stim_data, response_data)
+    # cnn_model(stim_data, response_data)
     # evaluate_cnn_model("cnn_model.pt", stim_data, response_data)

@@ -3,10 +3,11 @@
 
 # Packages
 from typing import Any
+import statsmodels.api as sm
 
 import joblib
 import numpy as np
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, curve_fit
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
@@ -122,17 +123,8 @@ def simple_linear_model(
 
     return model
 
-
-def sigmoid(params, res) -> float:
-    """
-    Sigmoid Transformation
-
-    :param params:
-    :param res:
-    :return: float
-    """
-    a, b, c = params
-    return a / (1 + np.exp(b * (c - res)))
+def sigmoid(x, L, x0, k, b):
+    return L / (1 + np.exp(-k * (x - x0))) + b
 
 
 def fl(params, res) -> float:
@@ -147,18 +139,120 @@ def fl(params, res) -> float:
     return b + a * np.exp(-np.exp(c * (res - s)))
 
 
-def hyperbolic_tan(param, res) -> float:
+def hyperbolic_tan(x, a, b, c, d):
     """
-    Hyperbolic Tangential Transformation.
-
-    :param param:
-    :param res:
-    :return: float
+    Hyperbolic Tangential Transformation with non-negativity constraint.
+    f(x) = max(0, a * tanh(b * (x - c)) + d)
     """
-    a, b, c = param
-    result = a * np.tanh(b * (res - c))
-    return result * (result > 0)
+    return a * np.tanh(b * (x - c)) + d
 
+
+def hyperbolic_tan_n(X, a, *params):
+    n_features = X.shape[0]
+
+
+class GLM:
+    def __init__(self):
+        self.formula = "y ~ x1 + x2"
+        self.model = None
+
+    def fit(self, x, y):
+        self.model = sm.GLM.from_formula(self.formula, x, y, family=sm.families.gaussian())
+        return self.model.fit()
+
+
+class LinearNonLinearModel:
+    def __init__(self):
+        self.model = LinearRegression()
+        self.params_ = None
+
+    def fit(self, x, y):
+        self.model.fit(x, y)
+        linear_pred = self.model.predict(x)
+
+        p0 = [np.max(y), 0.1, np.median(linear_pred), np.min(y)]
+        bounds = ([0, 0, -np.inf, -np.inf], [np.inf, np.inf, np.inf, np.inf])
+
+        self.params_, _ = curve_fit(
+            hyperbolic_tan, linear_pred, y,
+            p0=p0, bounds=bounds, maxfev=10000
+        )
+
+    def predict(self, x):
+        preds = self.model.predict(x)
+        return hyperbolic_tan(preds, *self.params_)
+
+    def plot_fit(self, s, r, start=0, end=200):
+        import matplotlib.pyplot as plt
+        """
+        Compare true vs predicted responses on a slice of the data.
+        """
+
+        y_pred = self.predict(s)
+        plt.scatter(y_pred, r, s=1)
+        plt.xlabel("Predicted Response")
+        plt.ylabel("True Response")
+        plt.show()
+        # plt.figure(figsize=(10, 5))
+        # plt.plot(r[start:end], label="True response")
+        # plt.plot(y_pred[start:end], label="LN prediction", linestyle="--")
+        # plt.plot(self.model.predict(s)[start:end],
+        #          label="Linear stage", alpha=0.7)
+        # plt.legend()
+        # plt.show()
+
+def hyperbolic_tan(X, a, *params):
+    """
+    Hyperbolic Tangential Transformation with non-negativity constraint.
+    f(x) = max(0, a * tanh(b * (x - c)) + d)
+    """
+    n_features = X.shape[1]
+    b = np.array(params[:n_features])
+    c = params[-2]
+    d = params[-1]
+
+    # Apply tanh to the dot product
+    return a * np.tanh(X.dot(b) - c) + d
+
+def sigmoid_n(X, L, *params):
+
+    n_features = X.shape[1]
+    b = np.array(params[:n_features])
+    k = params[-2]
+    x0 = params[-1]
+
+    return L / (1 + np.exp(X.dot(-b) - x0)) + k
+
+class NonLinearModel:
+    def __init__(self):
+        self.params_ = None
+
+    def fit(self, x, y):
+        print("Fitting model")
+        p0 = np.zeros(1 + x.shape[1] + 2)
+        p0[0] = 1
+
+        self.params_, _ = curve_fit(
+            sigmoid_n, x, y,
+            p0=p0, maxfev=10000
+        )
+
+    def predict(self, x):
+        print("Predicting model")
+        return hyperbolic_tan(x, *self.params_)
+
+    def plot_fit(self, s, r, start=0, end=200):
+        import matplotlib.pyplot as plt
+        """
+        Compare true vs predicted responses on a slice of the data.
+        """
+
+        y_pred = self.predict(s)
+        plt.figure(figsize=(10, 5))
+        plt.plot(r[start:end], label="True response")
+        plt.plot(y_pred[start:end], label="LN prediction", linestyle="--")
+        plt.legend()
+        plt.show()
 
 def residuals(params, x, r) -> float:
     """

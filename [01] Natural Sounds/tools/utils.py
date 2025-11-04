@@ -12,6 +12,7 @@ from typing import List, Tuple, Dict, Any
 
 import h5py
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
 # NEMS Packages
@@ -74,7 +75,7 @@ def prepare_stimulus(
 ) -> np.ndarray:
     """
     Given an array of numbers and d, ignore the first d elements of the array every 150
-    time points, and return sets of arrays of length d stacked vertically.
+    time points, and return sets of arrays of length 150 - d stacked vertically.
 
     :param idx: Index of channel
     :param data: Time data of channel
@@ -200,6 +201,21 @@ def load_state(filename: str) -> Any:
             return pickle.load(f)
     except FileNotFoundError:
         return None
+
+def load_csv(filename: str) -> pd.DataFrame:
+    try:
+        df = pd.read_csv(filename)
+        return df
+    except Exception as e:
+        print(e)
+        return None
+
+
+def save_csv(filename: str, data: pd.DataFrame) -> None:
+    try:
+        data.to_csv(filename, index=False)
+    except Exception as e:
+        print(e)
 
 
 # General Tools

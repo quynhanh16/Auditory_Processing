@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Auditory_Processing"
+version = "2025.1.0"
+authors = [
+  { name="Jonathan Gonzalez", email="jonathangon2014@gmail.com" },
+  { name="Anh Nguyen", email="nguyena@uindy.edu" },
+]
+description = """
+The Pure Tone Neural Analysis project is designed to analyze neural responses to auditory stimuli,
+specifically pure tones. The project processes neural data, computes firing rates, and visualizes
+the relationship between auditory stimuli and neural activity.
+"""
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "h5py",
+    "joblib",
+    "librosa",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "requests",
+    "scikit-learn",
+    "scipy",
+    "seaborn",
+    "statsmodels",
+    "torch",
+    "tqdm",
+]
+
+[project.urls]
+Homepage = "https://github.com/quynhanh16/Auditory_Processing.git"
